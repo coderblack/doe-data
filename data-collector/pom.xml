@@ -17,11 +17,15 @@
     </properties>
 
     <dependencies>
+
         <dependency>
             <groupId>org.apache.flume</groupId>
             <artifactId>flume-ng-core</artifactId>
             <version>1.9.0</version>
+            <!--表示，该依赖在运行时的环境已有提供 -->
+            <scope>provided</scope>
         </dependency>
+
     </dependencies>
 
 </project>
