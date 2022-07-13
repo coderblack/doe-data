@@ -3,6 +3,7 @@ package cn.doitedu.datacollect.flume;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.lang.math.RandomUtils;
 import org.apache.flume.Context;
 import org.apache.flume.Event;
 import org.apache.flume.interceptor.Interceptor;
@@ -35,6 +36,8 @@ public class TimestampExtractInterceptor implements Interceptor {
      */
     @Override
     public Event intercept(Event event) {
+        // 还多放入一个header 数据（用来支撑下游的 channel selector 进行负载均衡）
+        event.getHeaders().put("cs", RandomUtils.nextInt(2)+"");
 
         try {
             // 要从event中拿到日志json字符串
@@ -47,6 +50,8 @@ public class TimestampExtractInterceptor implements Interceptor {
 
             // 将时间戳，放入event的 headers中
             event.getHeaders().put("timestamp", eventTime + "");
+
+
 
             // 返回 event
             return event;
