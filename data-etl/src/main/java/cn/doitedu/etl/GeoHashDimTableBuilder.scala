@@ -24,9 +24,7 @@ object GeoHashDimTableBuilder {
     val df = spark.read.jdbc("jdbc:mysql://doitedu:3306/realtimedw", "t_md_areas", props)
     df.createTempView("t")
 
-
     spark.udf.register("geo",gps2GeoHashcode)
-
 
     spark.sql(
       """
@@ -48,8 +46,6 @@ object GeoHashDimTableBuilder {
         |group by geohash,province,city,region
         |
         |""".stripMargin)
-
-
 
     // res.write.format("hive").mode(SaveMode.Append).saveAsTable("dim.geohash_area")
 

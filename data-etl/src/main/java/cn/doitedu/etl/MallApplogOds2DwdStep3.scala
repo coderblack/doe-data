@@ -32,6 +32,8 @@ object MallApplogOds2DwdStep3 {
         |""".stripMargin)
 
     joined.createTempView("joined")
+
+    // 主输出：就是把关联处理后的日志输出，插入到dwd日志明细表中区
     spark.sql(
       """
         |insert overwrite table dwd.doitedu_mall_app_events partition(dt='2022-07-16')
@@ -41,6 +43,7 @@ object MallApplogOds2DwdStep3 {
 
 
     // 从查询结果中挑出关联地域信息失败的gps座标，进行侧输出
+    // 以便于后续可以用异步任务去对这些gps座标请求高德来得到地域信息
     spark.sql(
       """
         |select

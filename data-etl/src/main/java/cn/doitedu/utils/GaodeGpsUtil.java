@@ -20,7 +20,6 @@ public class GaodeGpsUtil {
 
     public static void main(String[] args) throws IOException {
 
-
         // 构造hdfs的客户端
         Configuration conf = new Configuration();
         conf.set("fs.defaultFS", "hdfs://doitedu:8020/");
