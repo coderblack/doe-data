@@ -6,6 +6,11 @@ import org.apache.spark.sql.{SaveMode, SparkSession}
 object MallApplogOds2DwdStep3 {
 
   def main(args: Array[String]): Unit = {
+    var dt = "2022-07-16"
+
+    if(args.length>0){
+      dt = args(0)
+    }
 
     val spark = SparkSession.builder()
       .appName("MallApplogOds2DwdStep3")
@@ -13,6 +18,8 @@ object MallApplogOds2DwdStep3 {
       .master("local")
       .enableHiveSupport()
       .getOrCreate()
+
+
 
     spark.udf.register("geo",Functions.gps2GeoHashcode)
 
@@ -35,8 +42,8 @@ object MallApplogOds2DwdStep3 {
 
     // 主输出：就是把关联处理后的日志输出，插入到dwd日志明细表中区
     spark.sql(
-      """
-        |insert overwrite table dwd.doitedu_mall_app_events partition(dt='2022-07-16')
+      s"""
+        |insert overwrite table dwd.doitedu_mall_app_events partition(dt='${dt}')
         |select * from joined
         |
         |""".stripMargin)
@@ -53,7 +60,7 @@ object MallApplogOds2DwdStep3 {
         |group by latitude,longitude
         |
         |""".stripMargin)
-      .write.mode(SaveMode.Overwrite).text("hdfs://doitedu:8020/unknown-gps/2022-07-16")
+      .write.mode(SaveMode.Overwrite).text(s"hdfs://doitedu:8020/unknown-gps/${dt}")
 
     spark.close()
   }

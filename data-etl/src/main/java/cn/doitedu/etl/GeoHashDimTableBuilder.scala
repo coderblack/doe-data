@@ -28,9 +28,19 @@ object GeoHashDimTableBuilder {
 
     spark.sql(
       """
-        |insert into table dim.geohash_area
+        |insert overwrite table dim.geohash_area
         |select
-        | geohash,province,city,region
+        | geohash,
+        | province,
+        | city,
+        | region
+        |from(
+        |select
+        | geohash,
+        | province,
+        | city,
+        | region,
+        | row_number() over(partition by geohash order by province) as rn
         |from
         |(
         |   SELECT
@@ -42,8 +52,10 @@ object GeoHashDimTableBuilder {
         |     join t lv3 on lv4.`LEVEL`=4 and lv4.bd09_lat is not null and lv4.bd09_lng is not null and lv4.PARENTID = lv3.ID
         |     join t lv2 on lv3.PARENTID = lv2.ID
         |     join t lv1 on lv2.PARENTID = lv1.ID
-        |)
-        |group by geohash,province,city,region
+        |) o1
+        |)o2
+        |
+        |where rn=1
         |
         |""".stripMargin)
 
