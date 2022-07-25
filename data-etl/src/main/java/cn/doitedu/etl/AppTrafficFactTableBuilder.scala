@@ -104,7 +104,7 @@ object AppTrafficFactTableBuilder {
        */
       val pageStaytimeMap: mutable.HashMap[String, Long] = mutable.HashMap.empty
 
-      for (i <- 0 until pageloadEventList.size) {
+      for (i <- pageloadEventList.indices) {
 
         var staytime: Long = 0
 
