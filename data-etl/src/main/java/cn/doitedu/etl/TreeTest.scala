@@ -31,8 +31,8 @@ object TreeTest {
       }
     }
 
-    val tmp = ListBuffer.empty[(String,Int)]
-    calcNodeContribute(node,tmp)
+    val tmp = ListBuffer.empty[(String, Int)]
+    calcNodeContribute(node, tmp)
     println(tmp)
 
     val tuples = calcNodeContribute2(node)
@@ -44,43 +44,41 @@ object TreeTest {
 
   // 挂载节点到树
   def findAndAppend(node: Node, pageId: String, refId: String): Boolean = {
-
-    var flag = false
-
-    for (childNode <- node.children.reverse if !flag) {  // 反转遍历，是为了先找右子树
-      flag = findAndAppend(childNode, pageId, refId)
+    for (childNode <- node.children.reverse) { // 反转遍历，是为了先找右子树
+      val flag = findAndAppend(childNode, pageId, refId)
       if (flag) return flag
     }
 
     if (node.pageId.equals(refId)) {
       node.children += Node(pageId, ListBuffer.empty[Node])
-      return true
+      true
+    } else {
+      false
     }
 
-    flag
+
   }
 
 
-
   // 计算总贡献量
-  def calcNodeContribute(node:Node,tmp:ListBuffer[(String,Int)]): Int ={
-    var pv =0
+  def calcNodeContribute(node: Node, tmp: ListBuffer[(String, Int)]): Int = {
+    var pv = 0
     pv += node.children.size
     for (cnode <- node.children) {
-      pv += calcNodeContribute(cnode,tmp)
+      pv += calcNodeContribute(cnode, tmp)
     }
-    tmp += ((node.pageId,pv))
+    tmp += ((node.pageId, pv))
     pv
   }
 
 
   // 计算直接贡献量
-  def calcNodeContribute2(node:Node):ListBuffer[(String,Int)]={
-    val lst = ListBuffer.empty[(String,Int)]
+  def calcNodeContribute2(node: Node): ListBuffer[(String, Int)] = {
+    val lst = ListBuffer.empty[(String, Int)]
     for (cnode <- node.children) {
       lst ++= calcNodeContribute2(cnode)
     }
-    lst += ((node.pageId,node.children.size))
+    lst += ((node.pageId, node.children.size))
 
   }
 
