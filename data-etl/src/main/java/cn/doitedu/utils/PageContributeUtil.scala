@@ -1,4 +1,4 @@
-package cn.doitedu.etl
+package cn.doitedu.utils
 
 import scala.collection.mutable.ListBuffer
 

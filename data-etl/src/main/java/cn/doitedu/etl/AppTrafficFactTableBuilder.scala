@@ -1,5 +1,6 @@
 package cn.doitedu.etl
 
+import cn.doitedu.utils.{PageContributeUtil, TreeNode}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{SaveMode, SparkSession}
 
@@ -91,7 +92,8 @@ object AppTrafficFactTableBuilder {
      */
 
     val result: RDD[ResultBean] = grouped.flatMap(tp => {
-      val iter = tp._2 // 这个iter就代表着一组数据： 相同人的相同会话中的所有页面访问记录
+      val iter: Iterable[PageBean] = tp._2 // 这个iter就代表着一组数据： 相同人的相同会话中的所有页面访问记录
+
 
       val pageloadEventList = iter.toList.sortBy(bean => bean.event_time)
 
