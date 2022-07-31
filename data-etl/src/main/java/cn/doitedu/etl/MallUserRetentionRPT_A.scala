@@ -1,15 +1,8 @@
 package cn.doitedu.etl
 
 import cn.hutool.core.date.DateUtil
-import org.apache.commons.lang.time.DateFormatUtils
-import org.apache.commons.lang3.time.DateUtils
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{Row, SparkSession}
+import org.apache.spark.sql.SparkSession
 
-import java.text.SimpleDateFormat
-import java.time.ZonedDateTime
-import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
-import scala.collection.mutable
 
 object MallUserRetentionRPT_A {
   def main(args: Array[String]): Unit = {
@@ -19,7 +12,6 @@ object MallUserRetentionRPT_A {
       .enableHiveSupport()
       .master("local")
       .config("spark.sql.shuffle.partitions", "1")
-      .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
       .getOrCreate()
 
     import spark.implicits._
@@ -45,8 +37,6 @@ object MallUserRetentionRPT_A {
       (strings(0).toLong,strings(1),strings(2))
     }).toDF("guid","range_start_dt","range_end_dt")
       .createTempView("doitedu_mall_app_user_actrange")
-
-
 
 
     // 读源表：   app用户活跃区间记录表
@@ -134,18 +124,25 @@ object MallUserRetentionRPT_A {
 
     /**
      * 自定义一个函数，用来判断一个用户是否属于某种 N日留存
+     *
+     * rangeLst :   [2022-07-01:2022-07-10, 2022-07-15:2022-07-17]
      */
-    val retentionJudge = (rangeLst:mutable.ArrayBuffer[String], targetDate:String) => {
+    val retentionJudge  = (rangeLst:Array[String], targetDate:String) => {
+
 
       // 遍历用户的每一个活跃区间
-      for (range <- rangeLst) {
+
+      var find = 0
+
+      for (range <- rangeLst if find==0) {
         val rangeStartAndEnd = range.split(":")
         // 如果该区间包含 要判断的 ”留存日期“ ，则返回1
-        if(targetDate >= rangeStartAndEnd(0)  && targetDate <= rangeStartAndEnd(1)) return 1
+        if(targetDate >= rangeStartAndEnd(0)  && targetDate <= rangeStartAndEnd(1)) {
+          find = 1
+        }
       }
-
       // 如果没有任何一个区间包含  要判断的“留存日期”， 则返回0 ： 表示该用户不属于这种 N日留存
-      0
+      find
     }
 
 
@@ -157,29 +154,52 @@ object MallUserRetentionRPT_A {
       """
         |
         |select
-        |   guid
-        |   ,retention_judge(range_lst,date_add(first_login_dt,1))  as r1
-        |   ,retention_judge(range_lst,date_add(first_login_dt,3))  as r3
-        |   ,retention_judge(range_lst,date_add(first_login_dt,7))  as r7
-        |from tmp2
+        |   o1.guid
+        |   ,o1.first_login_dt
+        |   ,o2.device_type
+        |   ,retention_judge(range_lst,date_add(first_login_dt,1))   as `是否1日留存`
+        |   ,retention_judge(range_lst,date_add(first_login_dt,3))  as `是否3日留存`
+        |   ,retention_judge(range_lst,date_add(first_login_dt,7))  as `是否7日留存`
+        |from tmp2 o1
+        |left join
+        |    (select guid,device_type from dim.visitor_common_attr where dt='2022-07-16' and '2022-07-16' between start_dt and end_dt ) o2
+        |on o1.guid=o2.guid
+        |
+        |""".stripMargin).createTempView("tmp3")
+    /*
+    +----+--------------+-----------+-----------+-----------+-----------+
+    |guid|first_login_dt|device_type|是否1日留存|是否3日留存|是否7日留存|
+    +----+--------------+-----------+-----------+-----------+-----------+
+    |1   |2022-07-01    |iphone7    |1          |1          |1          |
+    |2   |2022-07-01    |iphone6    |1          |1          |1          |
+    |3   |2022-07-02    |iphone6    |1          |0          |0          |
+    |4   |2022-07-03    |iphone7    |0          |0          |1          |
+    |5   |2022-07-08    |oppo-8     |1          |0          |0          |
+    +----+--------------+-----------+-----------+-----------+-----------+
+   */
+
+    spark.sql(
+      """
+        |select
+        |    month(first_login_dt)
+        |    ,device_type
+        |    ,sum(`是否1日留存`) as `次日留存数`
+        |    ,sum(`是否1日留存`)/count(1) as `次日留存率`
+        |    ,sum(`是否3日留存`) as `3日留存数`
+        |    ,sum(`是否3日留存`)/count(1) as `3日留存率`
+        |    ,sum(`是否7日留存`) as `7日留存数`
+        |    ,sum(`是否7日留存`)/count(1) as `7日留存率`
+        |from tmp3
+        |group by month(first_login_dt),device_type
         |
         |""".stripMargin).show(100,false)
 
-    /*spark.sql(
-      """
-        |select date_add(first_login_dt,1) from tmp2
-        |""".stripMargin).show(100,false)*/
+
+
 
 
 
     spark.close()
-
-
-
-
-
-
-
 
 
 
