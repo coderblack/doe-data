@@ -11,6 +11,7 @@
     <modules>
         <module>data-collector</module>
         <module>data-etl</module>
+        <module>tech-test</module>
     </modules>
 
     <properties>
