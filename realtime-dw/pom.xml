@@ -129,6 +129,12 @@
             <version>1.18.24</version>
         </dependency>
 
+        <dependency>
+            <groupId>ch.hsr</groupId>
+            <artifactId>geohash</artifactId>
+            <version>1.4.0</version>
+        </dependency>
+
 
     </dependencies>
 

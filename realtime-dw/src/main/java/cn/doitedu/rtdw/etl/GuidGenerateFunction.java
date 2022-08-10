@@ -61,9 +61,9 @@ import java.sql.*;
  * qualifier: ft  -- 首次到访时间
  * value:  137498587283123
  * -------------------------------------------------------------
- * rk      |      f                                            |
+ * rk      |      f:q                                            |
  * ------------------------------------------------------------
- * dev01     | guid:1001,ft:1374985872833,lt:1374998809889234 |
+ * dev01     | {guid:1001,ft:1374985872833,lt:1374998809889234} |
  * ------------------------------------------------------------
 
 
@@ -109,15 +109,15 @@ public class GuidGenerateFunction extends KeyedProcessFunction<String, EventBean
 
     Table deviceAccountBindTable;
     Table deviceTmpGuidTable;
-    Table deviceTmpMaxid;
+    Table deviceTmpMaxidTable;
 
-    MapStateDescriptor accountIdStateDescriptor;
-    MapStateDescriptor deviceAccountIdStateDescriptor;
-    MapStateDescriptor deviceTmpIdStateDescriptor;
+    MapStateDescriptor<String, Tuple2<Long, Long>> accountIdStateDescriptor;
+    MapStateDescriptor<String, Tuple3<String, Long, Long>> deviceAccountIdStateDescriptor;
+    MapStateDescriptor<String,Tuple2<Long,Long>> deviceTmpIdStateDescriptor;
 
     MapState<String, Tuple2<Long, Long>> accountIdState;
     MapState<String, Tuple3<String, Long, Long>> deviceAccountIdState;
-    MapState<String, Long> deviceTmpIdState;
+    MapState<String,Tuple2<Long, Long>> deviceTmpIdState;
 
 
     @Override
@@ -135,7 +135,7 @@ public class GuidGenerateFunction extends KeyedProcessFunction<String, EventBean
         // 构造hbase中所要用到的几个表客户端
         deviceAccountBindTable = hbaseConn.getTable(TableName.valueOf("device_account_bind"));
         deviceTmpGuidTable = hbaseConn.getTable(TableName.valueOf("device_tmp_guid"));
-        deviceTmpMaxid = hbaseConn.getTable(TableName.valueOf("device_tmp_maxid"));
+        deviceTmpMaxidTable = hbaseConn.getTable(TableName.valueOf("device_tmp_maxid"));
 
 
         // 构造几个用于查询缓存的 state (单值型，list，map，aggreate)
@@ -151,10 +151,13 @@ public class GuidGenerateFunction extends KeyedProcessFunction<String, EventBean
                 TypeInformation.of(new TypeHint<Tuple3<String, Long, Long>>() {
                 }));
 
-        deviceTmpIdStateDescriptor = new MapStateDescriptor<String, Long>(
+        // 设备id,临时guid,首访时间
+        deviceTmpIdStateDescriptor = new MapStateDescriptor<String,Tuple2<Long,Long>>(
                 "device-account-id",
                 TypeInformation.of(String.class),
-                TypeInformation.of(Long.class));
+                TypeInformation.of(new TypeHint<Tuple2<Long, Long>>() {
+                })
+        );
 
         accountIdState = getRuntimeContext().getMapState(accountIdStateDescriptor);
         deviceAccountIdState = getRuntimeContext().getMapState(deviceAccountIdStateDescriptor);
@@ -165,12 +168,9 @@ public class GuidGenerateFunction extends KeyedProcessFunction<String, EventBean
      * 填充 guid
      * 填充匿名访客首访时间
      * 填充会员注册时间
-     * 填充访客新老属性
      */
     @Override
     public void processElement(EventBean bean, KeyedProcessFunction<String, EventBean, EventBean>.Context ctx, Collector<EventBean> out) throws Exception {
-
-
 
         // 一、如果bean中有account
         if (StringUtils.isNotBlank(bean.getAccount())) {
@@ -182,7 +182,7 @@ public class GuidGenerateFunction extends KeyedProcessFunction<String, EventBean
                 bean.setRegisterTime(accountId.f1);
 
                 // 去hbase中，更新本账号的设备绑定权重（本账号增加，其他账号衰减）
-                GuidUtils.deviceAccountBindWeightHandle(bean.getAccount(),bean.getDeviceid(),deviceAccountBindTable);
+                GuidUtils.deviceAccountBindWeightHandle(bean.getAccount(),bean.getDeviceid(),deviceAccountBindTable,accountId.f0,accountId.f1);
 
 
             }else{
@@ -198,14 +198,12 @@ public class GuidGenerateFunction extends KeyedProcessFunction<String, EventBean
                 accountIdState.put(bean.getAccount(), userIdAndRegisterTime);
 
                 // 去hbase中，更新本账号的设备绑定权重（本账号增加，其他账号衰减）
-                GuidUtils.deviceAccountBindWeightHandle(bean.getAccount(),bean.getDeviceid(),deviceAccountBindTable);
+                GuidUtils.deviceAccountBindWeightHandle(bean.getAccount(),bean.getDeviceid(),deviceAccountBindTable,userIdAndRegisterTime.f0,userIdAndRegisterTime.f1);
 
             }
         }
 
-
         boolean flag = false;
-
         //二、如果bean中没有account
         if(StringUtils.isBlank(bean.getAccount())){
 
@@ -239,25 +237,59 @@ public class GuidGenerateFunction extends KeyedProcessFunction<String, EventBean
             }
         }
 
-
-
-        // 如果bean中没有account，且在设备账号绑定表中也不存在，则去hbase的 匿名设备id绑定表查找临时guid
-        // 将查询到的结果，存入flink state 中  ： 设备id,临时guid
+        // 三、如果 bean中没有account，且在设备账号绑定表中也不存在
         if(StringUtils.isBlank(bean.getAccount())  && !flag){
             // 先从缓存中查找匿名设备的临时guid
+            Tuple2<Long, Long> tmpIdInfo = deviceTmpIdState.get(bean.getDeviceid());
+            if(tmpIdInfo != null) {
+                // 取出数据，放入结果
+                bean.setGuid(tmpIdInfo.f0);
+                bean.setFirstAccessTime(tmpIdInfo.f1);
+
+                flag = true;
+            }
+            // 如果缓存中没有找到，则去hbase查找临时guid
+            else {
+                Tuple2<Long, Long> deviceTmpIdFromHbase = GuidUtils.getDeviceTmpIdFromHbase(deviceTmpGuidTable, bean.getDeviceid());
+                if(deviceTmpIdFromHbase != null ) {
+                    // 取出数据，放入结果
+                    bean.setGuid(deviceTmpIdFromHbase.f0);
+                    bean.setFirstAccessTime(deviceTmpIdFromHbase.f1);
 
 
+                    // 将查询到的结果，存入flink state 中  ： 设备id,临时guid
+                    deviceTmpIdState.put(bean.getDeviceid(),deviceTmpIdFromHbase);
+
+                    flag = true;
+
+                }
+            }
+
+        }
+
+        // 四、如果 bean中没有account，且在设备账号绑定表中也不存在，且在匿名设备id绑定表也不存在
+        if(StringUtils.isBlank(bean.getAccount()) && !flag ) {
+
+            // 请求guid计数器自增得到一个新的临时guid
+            Long newTmpId = GuidUtils.getNewTmpId(deviceTmpMaxidTable);
+
+            // 取出数据，放入结果
+            bean.setGuid(newTmpId);
+            bean.setFirstAccessTime(bean.getTimestamp());
 
 
+            // 要将递增得到的新临时id，放入  设备-临时id  绑定表
+            GuidUtils.addDeviceTmpIdToHbase(deviceTmpGuidTable,bean.getDeviceid(),newTmpId,bean.getTimestamp());
+
+
+            // 将查询到的结果，存入flink state 中
+            deviceTmpIdState.put(bean.getDeviceid(),Tuple2.of(newTmpId,bean.getTimestamp()));
 
         }
 
 
-
-
-        // 如果 bean中没有account，且在设备账号绑定表中也不存在，且在匿名设备id绑定表也不存在，则去请求guid计数器自增得到一个新的临时guid
-        // 将查询到的结果，存入flink state 中
-
+        // 输出结果
+        out.collect(bean);
 
     }
 
@@ -265,6 +297,12 @@ public class GuidGenerateFunction extends KeyedProcessFunction<String, EventBean
     @Override
     public void close() throws Exception {
 
+        conn.close();
+        deviceAccountBindTable.close();
+        deviceTmpGuidTable.close();
+        deviceTmpMaxidTable.close();
+
+        hbaseConn.close();
 
     }
 }
