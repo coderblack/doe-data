@@ -12,6 +12,7 @@
         <module>data-collector</module>
         <module>data-etl</module>
         <module>tech-test</module>
+        <module>realtime-dw</module>
     </modules>
 
     <properties>
