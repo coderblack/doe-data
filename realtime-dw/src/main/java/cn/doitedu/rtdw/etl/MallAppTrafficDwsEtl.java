@@ -4,21 +4,19 @@ import cn.doitedu.rtdw.etl.functions.TrafficAnalyseFunc;
 import cn.doitedu.rtdw.etl.pojo.EventBean;
 import cn.doitedu.rtdw.etl.pojo.TrafficBean;
 import com.alibaba.fastjson.JSON;
-import org.apache.flink.api.common.eventtime.SerializableTimestampAssigner;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.connector.base.DeliveryGuarantee;
+import org.apache.flink.connector.kafka.sink.KafkaRecordSerializationSchema;
+import org.apache.flink.connector.kafka.sink.KafkaSink;
 import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
-import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.KeyedProcessFunction;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
-import org.apache.flink.util.Collector;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 
 public class MallAppTrafficDwsEtl {
@@ -55,9 +53,19 @@ public class MallAppTrafficDwsEtl {
                 .process(new TrafficAnalyseFunc());
 
 
-        // 输出处理结果
-        trafficStream.print();
+        // 构造用于输出到kafka的sink算子
+        KafkaSink<String> resultSink = KafkaSink.<String>builder()
+                .setBootstrapServers("doitedu:9092")
+                .setRecordSerializer(KafkaRecordSerializationSchema.<String>builder()
+                        .setValueSerializationSchema(new SimpleStringSchema())
+                        .setTopic("dws-traffic-analyse")
+                        .build())
+                .setDeliverGuarantee(DeliveryGuarantee.AT_LEAST_ONCE)
+                .build();
 
+        // 将结果数据，转成json输出到kafka
+        trafficStream.map(JSON::toJSONString)
+                        .sinkTo(resultSink);
 
         env.execute();
 

@@ -18,6 +18,7 @@ public class TrafficAnalyseFunc extends KeyedProcessFunction<Tuple2<Long, String
 
     ValueState<Long> pageLoadTimeState;
     ValueState<Long> splitSessionStartTimeState;
+    ValueState<String> pageIdState;
 
     @Override
     public void open(Configuration parameters) throws Exception {
@@ -28,8 +29,13 @@ public class TrafficAnalyseFunc extends KeyedProcessFunction<Tuple2<Long, String
 
 
         // 构造一个state，用于记录当前所在切割子会话的起始时间
-        ValueStateDescriptor<Long> splitSessionStartTimeStateDesc = new ValueStateDescriptor<>("pageLoadTime", Long.class);
+        ValueStateDescriptor<Long> splitSessionStartTimeStateDesc = new ValueStateDescriptor<>("splitSessionStartTime", Long.class);
         splitSessionStartTimeState = getRuntimeContext().getState(splitSessionStartTimeStateDesc);
+
+
+        // 构造一个state，用于记录当前所在的页面
+        ValueStateDescriptor<String> pageIdStateDesc = new ValueStateDescriptor<>("pageId", String.class);
+        pageIdState = getRuntimeContext().getState(pageIdStateDesc);
 
 
     }
@@ -51,6 +57,7 @@ public class TrafficAnalyseFunc extends KeyedProcessFunction<Tuple2<Long, String
         if ("launch".equals(eventBean.getEventid()) || pageLoadTimeState.value() == null) {
             pageLoadTimeState.update(eventBean.getTimestamp());
             splitSessionStartTimeState.update(eventBean.getTimestamp());
+            pageIdState.update(eventBean.getProperties().get("pageId"));
         }
 
 
@@ -62,9 +69,9 @@ public class TrafficAnalyseFunc extends KeyedProcessFunction<Tuple2<Long, String
             TrafficBean vitureEvent = new TrafficBean(eventBean.getGuid(),
                     eventBean.getSessionid(),
                     eventBean.getSessionid() + "-" + splitSessionStartTimeState.value(),
-                    eventBean.getEventid(),
+                    "viture_event",
                     eventBean.getTimestamp(),
-                    eventBean.getProperties().get("viture_event"),
+                    pageIdState.value(),
                     pageLoadTimeState.value(),
                     eventBean.getProvince(),
                     eventBean.getCity(),
@@ -77,6 +84,8 @@ public class TrafficAnalyseFunc extends KeyedProcessFunction<Tuple2<Long, String
 
             // 更新状态中  "页面起始时间"
             pageLoadTimeState.update(eventBean.getTimestamp());
+            // 更新状态中  "当前页面"
+            pageIdState.update(eventBean.getProperties().get("pageId"));
         }
 
         // 判断本条数据是否是一个wakeup事件
@@ -84,6 +93,7 @@ public class TrafficAnalyseFunc extends KeyedProcessFunction<Tuple2<Long, String
         else if ("wakeUp".equals(eventBean.getEventid())) {
             splitSessionStartTimeState.update(eventBean.getTimestamp());
             pageLoadTimeState.update(eventBean.getTimestamp());
+
         }
 
 
