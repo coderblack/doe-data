@@ -1,4 +1,4 @@
-package cn.doitedu.rtdw.etl;
+package cn.doitedu.rtdw.etl.pojo;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

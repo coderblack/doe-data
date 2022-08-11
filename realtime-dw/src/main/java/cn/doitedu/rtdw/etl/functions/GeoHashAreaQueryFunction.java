@@ -1,5 +1,6 @@
-package cn.doitedu.rtdw.etl;
+package cn.doitedu.rtdw.etl.functions;
 
+import cn.doitedu.rtdw.etl.pojo.EventBean;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.configuration.Configuration;

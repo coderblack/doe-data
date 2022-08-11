@@ -1,9 +1,8 @@
-package cn.doitedu.rtdw.etl;
+package cn.doitedu.rtdw.etl.functions;
 
+import cn.doitedu.rtdw.etl.pojo.DeviceAccountBindInfo;
+import cn.doitedu.rtdw.etl.pojo.EventBean;
 import cn.doitedu.rtdw.utils.GuidUtils;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.common.state.MapState;
 import org.apache.flink.api.common.state.MapStateDescriptor;
@@ -17,10 +16,7 @@ import org.apache.flink.util.Collector;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
-import org.apache.hadoop.hbase.client.Get;
-import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Table;
-import org.apache.hadoop.hbase.util.Bytes;
 
 import java.sql.*;
 

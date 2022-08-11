@@ -1,4 +1,4 @@
-package cn.doitedu.rtdw.etl;
+package cn.doitedu.rtdw.etl.pojo;
 
 /**
  * Copyright 2022 bejson.com
