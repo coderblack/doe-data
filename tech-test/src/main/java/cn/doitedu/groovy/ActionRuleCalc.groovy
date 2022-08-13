@@ -1,17 +1,15 @@
 package cn.doitedu.groovy
 
 import cn.doitedu.IActionRuleCalc
-
 import com.alibaba.fastjson.JSON
 import com.alibaba.fastjson.JSONObject
-import lombok.extern.slf4j.Slf4j
 import redis.clients.jedis.Jedis
 
 class ActionRuleCalc implements IActionRuleCalc {
 
     JSONObject ruleParam
     Jedis jedis
-    HashMap<String, String> flinkMapState
+    HashMap<String, Integer> flinkMapState
 
     String ruleId
     String conditionId

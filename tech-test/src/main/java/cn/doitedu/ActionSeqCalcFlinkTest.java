@@ -1,5 +1,6 @@
 package cn.doitedu;
 
+import cn.doitedu.utils.Utils;
 import com.alibaba.fastjson.JSONObject;
 import groovy.lang.GroovyClassLoader;
 import lombok.AllArgsConstructor;
@@ -19,29 +20,14 @@ import redis.clients.jedis.Jedis;
 import java.io.File;
 import java.util.HashMap;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-class Event{
-    private String userId;
-    private String eventId;
-}
+
 
 public class ActionSeqCalcFlinkTest {
 
     public static void main(String[] args) throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-
         DataStreamSource<String> ds = env.socketTextStream("localhost", 4444);
-
-
-        DataStream<Event> eventDs = ds.map(new MapFunction<String, Event>() {
-            @Override
-            public Event map(String value) throws Exception {
-                String[] split = value.split(",");
-                return new Event(split[0], split[1]);
-            }
-        });
+        DataStream<Event> eventDs = Utils.getEventDataStream(ds);
 
 
         SingleOutputStreamOperator<String> res = eventDs.process(new ProcessFunction<Event, String>() {
@@ -76,7 +62,7 @@ public class ActionSeqCalcFlinkTest {
 
             @Override
             public void processElement(Event event, ProcessFunction<Event, String>.Context ctx, Collector<String> out) throws Exception {
-                boolean res = calculator.calc(event.getUserId(), event.getEventId());
+                boolean res = calculator.calc(event.getUserId()+"", event.getEventId());
                 if (res)
                     out.collect(String.format("用户:%s ,规则:%s ,条件:%s ,最小次数:%d ,已满足 ", event.getUserId(), ruleParam.getString("ruleId"), ruleParam.getString("conditionId"), ruleParam.getInteger("minCount")));
             }
@@ -88,5 +74,6 @@ public class ActionSeqCalcFlinkTest {
         env.execute();
 
     }
+
 
 }
