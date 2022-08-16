@@ -82,8 +82,29 @@
             <version>7.17.5</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.elasticsearch</groupId>
+            <artifactId>elasticsearch</artifactId>
+            <version>7.17.5</version>
+        </dependency>
+        <!-- elasticsearch的客户端 -->
+        <dependency>
+            <groupId>org.elasticsearch.client</groupId>
+            <artifactId>elasticsearch-rest-high-level-client</artifactId>
+            <version>7.17.5</version>
+        </dependency>
 
+        <!--<dependency>
+            <groupId>org.elastic.clients</groupId>
+            <artifactId>elasticsearch-java</artifactId>
+            <version>7.17.5</version>
+        </dependency>-->
 
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.24</version>
+        </dependency>
 
     </dependencies>
 

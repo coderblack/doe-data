@@ -13,6 +13,7 @@
         <module>data-etl</module>
         <module>tech-test</module>
         <module>realtime-dw</module>
+        <module>realtime-marketing</module>
     </modules>
 
     <properties>

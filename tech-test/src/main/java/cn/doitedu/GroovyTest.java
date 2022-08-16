@@ -9,7 +9,29 @@ import java.io.File;
 public class GroovyTest {
     public static void main(String[] args) throws Exception {
 
-        String s = FileUtils.readFileToString(new File("tech-test/src/main/java/cn/doitedu/groovy/Person.groovy"));
+        //String s = FileUtils.readFileToString(new File("tech-test/src/main/java/cn/doitedu/groovy/Person.groovy"));
+
+        String s = "package cn.doitedu.groovy\n" +
+                "\n" +
+                "import groovy.util.logging.Slf4j\n" +
+                "\n" +
+                "@Slf4j\n" +
+                "class Person {\n" +
+                "    def String sayName1(String name) {\n" +
+                "        log.error(\"hahahaha\")\n" +
+                "        return \"hello \" + name\n" +
+                "    }\n" +
+                "\n" +
+                "    def String sayName2(String name, String suffix) {\n" +
+                "        return name + \" \" + suffix\n" +
+                "    }\n" +
+                "\n" +
+                "\n" +
+                "    def int add(int a, int b) {\n" +
+                "        return a + b\n" +
+                "    }\n" +
+                "}\n";
+
 
         GroovyClassLoader classLoader = new GroovyClassLoader();
 
