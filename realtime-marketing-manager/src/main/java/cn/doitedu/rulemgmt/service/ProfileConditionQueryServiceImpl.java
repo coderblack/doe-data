@@ -16,19 +16,20 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.roaringbitmap.RoaringBitmap;
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 
+@Service
 public class ProfileConditionQueryServiceImpl {
     private RestHighLevelClient client;
     SearchRequest request;
+    // 构造es连接客户端
     public ProfileConditionQueryServiceImpl(){
         client = new RestHighLevelClient(RestClient.builder(new HttpHost("doitedu", 9200, "http")));
         request = new SearchRequest("doeusers");
 
     }
-
-
 
     // 接口文档：
     // [{"tagId":"tg01","compareType":"eq","compareValue":"3"},{"tagId":"tg04","compareType":"match","compareValue":"运动"}]
@@ -77,6 +78,4 @@ public class ProfileConditionQueryServiceImpl {
 
         return bitmap;
     }
-
-
 }

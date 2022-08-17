@@ -22,6 +22,7 @@
             <groupId>org.codehaus.groovy</groupId>
             <artifactId>groovy-all</artifactId>
             <version>3.0.12</version>
+            <type>pom</type>
         </dependency>
 
         <dependency>
@@ -107,6 +108,7 @@
             <version>1.18.24</version>
         </dependency>
 
+        <!-- 模板引擎 -->
         <dependency>
             <groupId>com.jfinal</groupId>
             <artifactId>enjoy</artifactId>

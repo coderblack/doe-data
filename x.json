@@ -1,44 +1,57 @@
 {
-  "took": 2,
-  "timed_out": false,
-  "_shards": {
-    "total": 1,
-    "successful": 1,
-    "skipped": 0,
-    "failed": 0
-  },
-  "hits": {
-    "total": {
-      "value": 2,
-      "relation": "eq"
+  "ruleId": "rule001",
+  "profileCondition": [
+    {
+      "tagId": "tg01",
+      "compareType": "eq",
+      "compareValue": "3"
     },
-    "max_score": 1.0,
-    "hits": [
+    {
+      "tagId": "tg04",
+      "compareType": "match",
+      "compareValue": "运动"
+    }
+  ],
+  "actionCountCondition": {
+    "combineExpr": " res0 && res1 ",
+    "events": [
       {
-        "_index": "city",
-        "_type": "shenzhen",
-        "_id": "1",
-        "_score": 1.0,
-        "_source": {
-          "name": "ShenZhen",
-          "area": [
-            "NanShan",
-            "FuTian"
-          ]
-        }
+        "eventId": "share",
+        "attributeParams": [
+          {
+            "attributeName": "pageId",
+            "compareType": "eq",
+            "compareValue": "page001"
+          },
+          {
+            "attributeName": "itemId",
+            "compareType": "eq",
+            "compareValue": "item002"
+          }
+        ],
+        "windowStart": "2022-08-01 12:00:00",
+        "windowEnd": "2022-08-30 12:00:00",
+        "eventCount": 3,
+        "conditionId": 1
       },
       {
-        "_index": "city",
-        "_type": "shenzhen",
-        "_id": "2",
-        "_score": 1.0,
-        "_source": {
-          "name": "改革开放继往开来",
-          "area": [
-            "南国",
-            "村野"
-          ]
-        }
+        "eventId": "share",
+        "attributeParams": [
+          {
+            "attributeName": "pageId",
+            "compareType": "eq",
+            "compareValue": "page001"
+          },
+          {
+            "attributeName": "itemId",
+            "compareType": "eq",
+            "compareValue": "item002"
+          }
+        ],
+        "windowStart": "2022-08-01 12:00:00",
+        "windowEnd": "2022-08-30 12:00:00",
+        "eventCount": 3,
+        "conditionId": 1
       }
     ]
   }
