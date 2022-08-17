@@ -14,6 +14,8 @@
         <module>tech-test</module>
         <module>realtime-dw</module>
         <module>realtime-marketing</module>
+        <module>data-export</module>
+        <module>realtime-marketing-mgmt</module>
     </modules>
 
     <properties>

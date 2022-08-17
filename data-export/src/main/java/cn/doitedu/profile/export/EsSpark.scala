@@ -1,4 +1,4 @@
-package cn.doitedu.utils
+package cn.doitedu.profile.`export`
 
 import org.apache.spark.{SparkConf, SparkContext}
 import org.elasticsearch.spark._
@@ -40,12 +40,13 @@ object EsSpark {
     val sc = new SparkContext(conf)
 
     val rdd = sc.makeRDD(Seq(
-      Map("id"->1,"tg01" -> 5, "tg02" -> 10, "tg03" -> "高富帅", "tg04" -> List("改革开发", "高档食品")),
-      Map("id"->2,"tg01" -> 4, "tg02" -> 20, "tg03" -> "白富美", "tg04" -> List("农村幼儿园", "运动饮料")),
-      Map("id"->3,"tg01" -> 3, "tg02" -> 15, "tg03" -> "全职妈妈", "tg04" -> List("城市幼儿园", "运动服装"))
+      Map("guid"->1,"tg01" -> 5, "tg02" -> 10, "tg03" -> "高富帅", "tg04" -> List("高端家具","汽车保养", "小罐咖啡")),
+      Map("guid"->2,"tg01" -> 4, "tg02" -> 20, "tg03" -> "白富美", "tg04" -> List("兰蔻精华液","特仑苏牛奶", "香奈儿","高尔夫球场","高尔夫运动服饰","汽车内饰"),"tg05"->"女"),
+      Map("guid"->3,"tg01" -> 3, "tg02" -> 15, "tg03" -> "全职妈妈", "tg04" -> List("惠氏奶粉牛奶", "宝宝润肤露","运动健身计划")),
+      Map("guid"->4,"tg01" -> 3, "tg02" -> 14, "tg03" -> "职场人士", "tg04" -> List("兰蔻小黑瓶", "宝宝润肤露","家用汽车购置攻略"),"tg05"->"男")
     ))
 
-    rdd.saveToEs("docs/",Map("es.mapping.id" -> "id"))
+    rdd.saveToEs("doeusers/",Map("es.mapping.id" -> "guid"))
 
     sc.stop()
 

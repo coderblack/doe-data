@@ -1,0 +1,45 @@
+{
+  "took": 2,
+  "timed_out": false,
+  "_shards": {
+    "total": 1,
+    "successful": 1,
+    "skipped": 0,
+    "failed": 0
+  },
+  "hits": {
+    "total": {
+      "value": 2,
+      "relation": "eq"
+    },
+    "max_score": 1.0,
+    "hits": [
+      {
+        "_index": "city",
+        "_type": "shenzhen",
+        "_id": "1",
+        "_score": 1.0,
+        "_source": {
+          "name": "ShenZhen",
+          "area": [
+            "NanShan",
+            "FuTian"
+          ]
+        }
+      },
+      {
+        "_index": "city",
+        "_type": "shenzhen",
+        "_id": "2",
+        "_score": 1.0,
+        "_source": {
+          "name": "改革开放继往开来",
+          "area": [
+            "南国",
+            "村野"
+          ]
+        }
+      }
+    ]
+  }
+}

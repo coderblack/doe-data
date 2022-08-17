@@ -9,14 +9,15 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>data-etl</artifactId>
+    <artifactId>data-export</artifactId>
+
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
-        <scala.version>2.12.12</scala.version>
-        <spark.version>3.1.2</spark.version>
-        <spark.scala>2.12</spark.scala>
+        <scala.version>2.11.12</scala.version>
+        <spark.version>2.3.0</spark.version>
+        <spark.scala>2.11</spark.scala>
     </properties>
 
     <dependencies>
@@ -44,12 +45,6 @@
         </dependency>
 
 
-        <!-- geohash编码工具包 -->
-        <dependency>
-            <groupId>ch.hsr</groupId>
-            <artifactId>geohash</artifactId>
-            <version>1.4.0</version>
-        </dependency>
 
         <dependency>
             <groupId>mysql</groupId>
@@ -57,29 +52,12 @@
             <version>8.0.29</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>4.5.13</version>
-        </dependency>
-
-        <dependency>
-            <groupId>cn.hutool</groupId>
-            <artifactId>hutool-core</artifactId>
-            <version>5.8.5</version>
-        </dependency>
 
 
-        <!-- 做bulkload需要用的hbase的依赖 -->
-        <dependency>
-            <groupId>org.apache.hbase</groupId>
-            <artifactId>hbase-mapreduce</artifactId>
-            <version>2.4.8</version>
-        </dependency>
 
 
         <!-- elastic search   hadoop生态各组件的整合包  -->
-        <!--<dependency>
+        <dependency>
             <groupId>org.elasticsearch</groupId>
             <artifactId>elasticsearch-hadoop</artifactId>
             <version>7.17.5</version>
@@ -89,7 +67,7 @@
             <groupId>org.elasticsearch</groupId>
             <artifactId>elasticsearch</artifactId>
             <version>7.17.5</version>
-        </dependency>-->
+        </dependency>
         <!-- elasticsearch的客户端 -->
         <dependency>
             <groupId>org.elasticsearch.client</groupId>
@@ -97,11 +75,6 @@
             <version>7.17.5</version>
         </dependency>
 
-        <!--<dependency>
-            <groupId>org.elastic.clients</groupId>
-            <artifactId>elasticsearch-java</artifactId>
-            <version>7.17.5</version>
-        </dependency>-->
 
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -135,5 +108,9 @@
             </plugin>
         </plugins>
     </build>
+
+
+
+
 
 </project>

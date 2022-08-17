@@ -107,6 +107,12 @@
             <version>1.18.24</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.jfinal</groupId>
+            <artifactId>enjoy</artifactId>
+            <version>5.0.0</version>
+        </dependency>
+
 
     </dependencies>
 
