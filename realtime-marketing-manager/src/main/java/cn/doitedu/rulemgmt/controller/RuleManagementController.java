@@ -2,13 +2,12 @@ package cn.doitedu.rulemgmt.controller;
 
 import cn.doitedu.rulemgmt.dao.DorisQueryDaoImpl;
 import cn.doitedu.rulemgmt.dao.RuleSystemMetaDaoImpl;
-import cn.doitedu.rulemgmt.service.ActionConditionQueryService;
-import cn.doitedu.rulemgmt.service.ActionConditionQueryServiceImpl;
-import cn.doitedu.rulemgmt.service.ProfileConditionQueryService;
-import cn.doitedu.rulemgmt.service.ProfileConditionQueryServiceImpl;
+import cn.doitedu.rulemgmt.service.*;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.jfinal.template.Engine;
+import com.jfinal.template.Template;
 import org.roaringbitmap.RoaringBitmap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.HashMap;
 
 
 /**
@@ -28,16 +28,21 @@ public class RuleManagementController {
 
     private final ProfileConditionQueryService profileConditionQueryServiceImpl;
     private final ActionConditionQueryService actionConditionQueryService;
+    private final RuleSystemMetaService ruleSystemMetaService;
 
     @Autowired
-    public RuleManagementController(ProfileConditionQueryService profileConditionQueryServiceImpl, ActionConditionQueryService actionConditionQueryService) {
+    public RuleManagementController(
+            ProfileConditionQueryService profileConditionQueryServiceImpl,
+            ActionConditionQueryService actionConditionQueryService,
+            RuleSystemMetaService ruleSystemMetaService) {
         this.profileConditionQueryServiceImpl = profileConditionQueryServiceImpl;
         this.actionConditionQueryService = actionConditionQueryService;
+        this.ruleSystemMetaService = ruleSystemMetaService;
     }
 
     /**
      * 从前端页面接收规则定义的参数json，并发布规则
-     * @param ruleDefineJson
+     * @param ruleDefineJson 规则实例参数定义json
      * @throws IOException
      * @throws SQLException
      */
@@ -80,19 +85,45 @@ public class RuleManagementController {
             // 调用行为条件查询服务，传入行为条件参数，以及人群bitmap
             actionConditionQueryService.queryActionCount(eventParamJsonObject,ruleId,bitmap);
         }
-        System.out.println("------查询行为次数类条件的历史值 开始---------");
+        System.out.println("------查询行为次数类条件的历史值 结束---------");
 
-        // 把3类信息，放入规则平台的元数据库
-        // 人群 bitmap
-        // 规则参数（大json）
-        // 规则运算的 groovy 代码
 
         /**
          * 三、 规则的groovy运算代码处理
          */
+        String ruleModelCaculatorGroovyTemplate = ruleSystemMetaService.findRuleModelGroovyTemplate(ruleDefineJsonObject.getInteger("ruleModelId"));
+        Template template = Engine.use().getTemplateByString(ruleModelCaculatorGroovyTemplate);
 
 
+        // 取出规则实例定义参数中的 事件次数条件参数
+        JSONObject actionCountCondition = ruleDefineJsonObject.getJSONObject("actionCountCondition");
 
+        // 从事件条件参数中，取出事件条件的个数
+        int eventPamramsSize = actionCountCondition.getJSONArray("eventParams").size();
+
+        // 从事件条件参数中，取出事件条件的组合布尔表达式
+        String combineExpr = actionCountCondition.getString("combineExpr");
+
+        // 放入一个hashmap中
+        HashMap<String, Object> data = new HashMap<>();
+        data.put("eventParams", new int[eventPamramsSize]);
+        data.put("combineExpr",combineExpr);
+
+        // 利用上面的hashmap，渲染groovy模板，得到最终可执行的groovy代码
+        String groovyCaculatorCode = template.renderToString(data);
+
+        /**
+         * 四、 正式发布规则
+         *  把3类信息，放入规则平台的元数据库
+         *  人群 bitmap
+         *  规则参数（大json）
+         *  规则运算的 groovy 代码
+         */
+
+        Integer ruleModelId = ruleDefineJsonObject.getInteger("ruleModelId");
+        String creatorName = "yao mei";
+
+        ruleSystemMetaService.publishRuleInstance(ruleId,ruleModelId,creatorName,1,bitmap,ruleDefineJson,groovyCaculatorCode);
 
     }
 
@@ -100,7 +131,10 @@ public class RuleManagementController {
     // 测试： 手动调用controller的规则发布功能
     public static void main(String[] args) throws IOException, SQLException {
 
-        RuleManagementController controller = new RuleManagementController(new ProfileConditionQueryServiceImpl(),new ActionConditionQueryServiceImpl(new RuleSystemMetaDaoImpl(),new DorisQueryDaoImpl()));
+        RuleManagementController controller = new RuleManagementController(
+                new ProfileConditionQueryServiceImpl(),
+                new ActionConditionQueryServiceImpl(new RuleSystemMetaDaoImpl(),
+                        new DorisQueryDaoImpl()),new RuleSystemMetaServiceImpl(new RuleSystemMetaDaoImpl()));
 
         String webFrontJson = "{\n" +
                 "   \"ruleId\":\"rule001\",\n" +

@@ -4,13 +4,13 @@
   "profileCondition": [
     {
       "tagId": "tg01",
-      "compareType": "eq",
+      "compareType": "gt",
       "compareValue": "3"
     },
     {
       "tagId": "tg04",
       "compareType": "match",
-      "compareValue": "运动"
+      "compareValue": "汽车"
     }
   ],
   "actionCountCondition": {
@@ -19,9 +19,9 @@
         "eventId": "e1",
         "attributeParams": [
           {
-            "attributeName": "p1",
+            "attributeName": "pageId",
             "compareType": "=",
-            "compareValue": "v1"
+            "compareValue": "page001"
           }
         ],
         "windowStart": "2022-08-01 12:00:00",
@@ -31,17 +31,17 @@
         "dorisQueryTemplate": "action_count"
       },
       {
-        "eventId": "e2",
+        "eventId": "e3",
         "attributeParams": [
           {
-            "attributeName": "p1",
+            "attributeName": "pageId",
             "compareType": "=",
-            "compareValue": "v2"
+            "compareValue": "page002"
           },
           {
-            "attributeName": "p2",
+            "attributeName": "itemId",
             "compareType": "=",
-            "compareValue": "v3"
+            "compareValue": "item003"
           }
         ],
         "windowStart": "2022-08-01 12:00:00",
@@ -51,12 +51,12 @@
         "dorisQueryTemplate": "action_count"
       },
       {
-        "eventId": "e3",
+        "eventId": "e2",
         "attributeParams": [
           {
-            "attributeName": "p1",
+            "attributeName": "pageId",
             "compareType": "=",
-            "compareValue": "v1"
+            "compareValue": "page001"
           }
         ],
         "windowStart": "2022-08-01 12:00:00",

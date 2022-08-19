@@ -1,5 +1,5 @@
 {
-  "//": "**规则标识符",
+  "ruleModelId": 1,
   "ruleId": "rule001",
   "//": "**规则画像条件参数",
   "profileCondition": [
