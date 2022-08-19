@@ -8,6 +8,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.RestHighLevelClientBuilder;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.MatchQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -27,6 +28,7 @@ public class ProfileConditionQueryServiceImpl implements ProfileConditionQuerySe
 
     // 构造es连接客户端
     public ProfileConditionQueryServiceImpl(){
+
         client = new RestHighLevelClient(RestClient.builder(new HttpHost("doitedu", 9200, "http")));
         request = new SearchRequest("doeusers");
 

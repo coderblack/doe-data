@@ -35,7 +35,12 @@ public class RuleManagementController {
         this.actionConditionQueryService = actionConditionQueryService;
     }
 
-    // 从前端页面接收规则定义的参数json，并发布规则
+    /**
+     * 从前端页面接收规则定义的参数json，并发布规则
+     * @param ruleDefineJson
+     * @throws IOException
+     * @throws SQLException
+     */
     @RequestMapping("/api/publish/addrule")
     public void publishRule(@RequestBody String ruleDefineJson) throws IOException, SQLException {
 
@@ -47,6 +52,9 @@ public class RuleManagementController {
         String ruleId = ruleDefineJsonObject.getString("ruleId");
 
 
+        /**
+         * 一、 人群画像处理
+         */
         System.out.println("------查询画像人群 开始---------");
         // 调用service查询满足规则画像条件的人群
         RoaringBitmap bitmap = profileConditionQueryServiceImpl.queryProfileUsers(ruleDefineJsonObject.getJSONArray("profileCondition"));
@@ -58,6 +66,9 @@ public class RuleManagementController {
         System.out.println("");
 
 
+        /**
+         * 二、 规则的行为条件历史值处理
+         */
         System.out.println("------查询行为次数类条件的历史值 开始---------");
         // 解析出行为次数条件，到 doris中去查询各条件的历史值，并发布到 redis
         JSONObject actionCountConditionJsonObject = ruleDefineJsonObject.getJSONObject("actionCountCondition");  // 整个规则的参数
@@ -66,11 +77,20 @@ public class RuleManagementController {
         // 遍历每一个事件次数条件,并进行历史数据查询，且顺便发布到redis
         for(int i = 0;i<eventParamsJsonArray.size(); i++) {
             JSONObject eventParamJsonObject = eventParamsJsonArray.getJSONObject(i);
-            actionConditionQueryService.queryActionCount(eventParamJsonObject,ruleId);
+            // 调用行为条件查询服务，传入行为条件参数，以及人群bitmap
+            actionConditionQueryService.queryActionCount(eventParamJsonObject,ruleId,bitmap);
         }
         System.out.println("------查询行为次数类条件的历史值 开始---------");
 
-        // TODO
+        // 把3类信息，放入规则平台的元数据库
+        // 人群 bitmap
+        // 规则参数（大json）
+        // 规则运算的 groovy 代码
+
+        /**
+         * 三、 规则的groovy运算代码处理
+         */
+
 
 
 

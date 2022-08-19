@@ -1,5 +1,6 @@
 package cn.doitedu.rulemgmt.dao;
 
+import org.roaringbitmap.RoaringBitmap;
 import org.springframework.stereotype.Repository;
 import redis.clients.jedis.Jedis;
 
@@ -22,15 +23,18 @@ public class DorisQueryDaoImpl implements DorisQueryDao {
 
     // 根据给定的sql来查询行为次数
     @Override
-    public void queryActionCount(String sql, String ruleId, String conditionId) throws SQLException {
+    public void queryActionCount(String sql, String ruleId, String conditionId, RoaringBitmap profileBitmap) throws SQLException {
 
         ResultSet resultSet = statement.executeQuery(sql);
 
         HashMap<String, String> guidAndCount = new HashMap<>();
         while(resultSet.next()){
             int guid = resultSet.getInt("guid");
-            long cnt = resultSet.getLong("cnt");
-            guidAndCount.put(guid+"",cnt+"");
+            // 属于画像人群的用户，才把它的历史行为次数条件查询结果放入redis
+            if(profileBitmap.contains(guid)) {
+                long cnt = resultSet.getLong("cnt");
+                guidAndCount.put(guid + "", cnt + "");
+            }
         }
 
 
@@ -54,7 +58,7 @@ public class DorisQueryDaoImpl implements DorisQueryDao {
                 "AND event_time<='2022-08-31 12:00:00'\n" +
                 "AND event_id = 'e2'\n" +
                 "AND get_json_string(propJson,'$.pageId') = 'page002'\n" +
-                "GROUP BY guid","rule01","1");
+                "GROUP BY guid","rule01","1",RoaringBitmap.bitmapOf(1,3,5,6));
 
     }
 
