@@ -1,4 +1,4 @@
-package cn.doitedu.rulemgmt.groovy;
+package cn.doitedu.rtmk.groovy;
 
 import cn.doitedu.rulemgmt.pojo.EventBean;
 import com.alibaba.fastjson.JSONObject;

@@ -17,7 +17,7 @@ class ConditionCalculator implements IConditionCalculator{
 
 
     @Override
-    boolean calc(EventBean eventBean) {
+    boolean calc(EventBean userEvent) {
 
         #for(i : conditions)
         JSONObject param#(for.index) = eventParams.getJSONObject(#(for.index))
@@ -28,13 +28,13 @@ class ConditionCalculator implements IConditionCalculator{
 
         boolean res#(for.index) = false;
 
-        if(eventBean.getEventId() == eventId#(for.index)){
-            //println( "json " +  eventId#(for.index) + "," + eventBean.getEventId())
+        if(userEvent.getEventId() == eventId#(for.index)){
+            //println( "json " +  eventId#(for.index) + "," + userEvent.getEventId())
             //println("oper: " + operatorType#(for.index))
             if(operatorType#(for.index).equals("eq")){
-                res#(for.index) = eventBean.getProperties().get(attributeName#(for.index)) == value#(for.index);
+                res#(for.index) = userEvent.getProperties().get(attributeName#(for.index)) == value#(for.index);
             }else if(operatorType#(for.index).equals("lt")){
-                res#(for.index) = eventBean.getProperties().get(attributeName#(for.index)) > value#(for.index);
+                res#(for.index) = userEvent.getProperties().get(attributeName#(for.index)) > value#(for.index);
             }
         }
 
