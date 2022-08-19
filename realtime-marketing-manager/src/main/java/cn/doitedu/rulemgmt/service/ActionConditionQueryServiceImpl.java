@@ -1,6 +1,6 @@
 package cn.doitedu.rulemgmt.service;
 
-import cn.doitedu.rulemgmt.dao.DorisQueryDao;
+import cn.doitedu.rulemgmt.dao.DorisQueryDaoImpl;
 import cn.doitedu.rulemgmt.dao.RuleSystemMetaDaoImpl;
 import cn.doitedu.rulemgmt.pojo.ActionAttributeParam;
 import com.alibaba.fastjson.JSON;
@@ -37,16 +37,19 @@ import java.util.HashMap;
  }
  */
 @Service
-public class ActionConditionQueryServiceImpl {
+public class ActionConditionQueryServiceImpl implements ActionConditionQueryService {
+
+    private final RuleSystemMetaDaoImpl ruleSystemMetaDao;
+    private final DorisQueryDaoImpl dorisQueryDaoImpl;
 
     @Autowired
-    RuleSystemMetaDaoImpl ruleSystemMetaDao;
+    public ActionConditionQueryServiceImpl(RuleSystemMetaDaoImpl ruleSystemMetaDao, DorisQueryDaoImpl dorisQueryDaoImpl) {
+        this.ruleSystemMetaDao = ruleSystemMetaDao;
+        this.dorisQueryDaoImpl = dorisQueryDaoImpl;
+    }
 
-    @Autowired
-    DorisQueryDao dorisQueryDao;
-
-
-    public void queryActionCount(JSONObject eventParamJsonObject,String ruleId) throws SQLException {
+    @Override
+    public void queryActionCount(JSONObject eventParamJsonObject, String ruleId) throws SQLException {
 
         // 从事件次数条件中，取出各条件参数
         String eventId = eventParamJsonObject.getString("eventId");
@@ -79,7 +82,7 @@ public class ActionConditionQueryServiceImpl {
         String sql = template.renderToString(data);
 
         // 调用doris查询dao，去执行这个sql，得到结果
-        dorisQueryDao.queryActionCount(sql,ruleId,conditionId+"");
+        dorisQueryDaoImpl.queryActionCount(sql,ruleId,conditionId+"");
 
 
     }
@@ -87,7 +90,7 @@ public class ActionConditionQueryServiceImpl {
 
     public static void main(String[] args) throws SQLException {
 
-        ActionConditionQueryServiceImpl service = new ActionConditionQueryServiceImpl();
+        ActionConditionQueryServiceImpl service = new ActionConditionQueryServiceImpl(new RuleSystemMetaDaoImpl(),new DorisQueryDaoImpl());
         String conditionJson = "  {\n" +
                 " \"eventId\":\"share\",\n" +
                 " \"attributeParams\":[\n" +

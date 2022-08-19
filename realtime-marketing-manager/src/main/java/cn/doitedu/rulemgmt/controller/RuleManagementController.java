@@ -1,6 +1,10 @@
 package cn.doitedu.rulemgmt.controller;
 
+import cn.doitedu.rulemgmt.dao.DorisQueryDaoImpl;
+import cn.doitedu.rulemgmt.dao.RuleSystemMetaDaoImpl;
+import cn.doitedu.rulemgmt.service.ActionConditionQueryService;
 import cn.doitedu.rulemgmt.service.ActionConditionQueryServiceImpl;
+import cn.doitedu.rulemgmt.service.ProfileConditionQueryService;
 import cn.doitedu.rulemgmt.service.ProfileConditionQueryServiceImpl;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
@@ -22,12 +26,14 @@ import java.sql.SQLException;
 @RestController
 public class RuleManagementController {
 
-    @Autowired
-    ProfileConditionQueryServiceImpl profileConditionQueryServiceImpl;
+    private final ProfileConditionQueryService profileConditionQueryServiceImpl;
+    private final ActionConditionQueryService actionConditionQueryService;
 
     @Autowired
-    ActionConditionQueryServiceImpl actionConditionQueryService;
-
+    public RuleManagementController(ProfileConditionQueryService profileConditionQueryServiceImpl, ActionConditionQueryService actionConditionQueryService) {
+        this.profileConditionQueryServiceImpl = profileConditionQueryServiceImpl;
+        this.actionConditionQueryService = actionConditionQueryService;
+    }
 
     // 从前端页面接收规则定义的参数json，并发布规则
     @RequestMapping("/api/publish/addrule")
@@ -46,16 +52,16 @@ public class RuleManagementController {
         RoaringBitmap bitmap = profileConditionQueryServiceImpl.queryProfileUsers(ruleDefineJsonObject.getJSONArray("profileCondition"));
         System.out.println(bitmap.contains(3));
         System.out.println(bitmap.contains(5));
-
         System.out.println("------查询画像人群 完成---------");
+
         System.out.println("");
         System.out.println("");
 
 
         System.out.println("------查询行为次数类条件的历史值 开始---------");
         // 解析出行为次数条件，到 doris中去查询各条件的历史值，并发布到 redis
-        JSONObject actionCountConditionJsonObject = ruleDefineJsonObject.getJSONObject("actionCountCondition");
-        JSONArray eventParamsJsonArray = actionCountConditionJsonObject.getJSONArray("eventParams");
+        JSONObject actionCountConditionJsonObject = ruleDefineJsonObject.getJSONObject("actionCountCondition");  // 整个规则的参数
+        JSONArray eventParamsJsonArray = actionCountConditionJsonObject.getJSONArray("eventParams");  // 事件次数条件的参数
 
         // 遍历每一个事件次数条件,并进行历史数据查询，且顺便发布到redis
         for(int i = 0;i<eventParamsJsonArray.size(); i++) {
@@ -64,8 +70,6 @@ public class RuleManagementController {
         }
         System.out.println("------查询行为次数类条件的历史值 开始---------");
 
-
-
         // TODO
 
 
@@ -73,10 +77,10 @@ public class RuleManagementController {
     }
 
 
-    // 手动调用controller的规则发布功能
+    // 测试： 手动调用controller的规则发布功能
     public static void main(String[] args) throws IOException, SQLException {
 
-        RuleManagementController controller = new RuleManagementController();
+        RuleManagementController controller = new RuleManagementController(new ProfileConditionQueryServiceImpl(),new ActionConditionQueryServiceImpl(new RuleSystemMetaDaoImpl(),new DorisQueryDaoImpl()));
 
         String webFrontJson = "{\n" +
                 "   \"ruleId\":\"rule001\",\n" +
