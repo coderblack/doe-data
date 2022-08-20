@@ -63,6 +63,9 @@ public class Row2RuleMetaBeanMapFunction implements MapFunction<Row, RuleMetaBea
         bitmap.deserialize(ByteBuffer.wrap(bitmapBytes));
 
         String caculatorGroovyCode = row.getFieldAs("caculator_groovy_code");
+        String ruleParamJson = row.getFieldAs("rule_param_json");
+
+
         String creatorName = row.getFieldAs("creator_name");
         int ruleStatus = row.getFieldAs("rule_status");
 
@@ -70,6 +73,7 @@ public class Row2RuleMetaBeanMapFunction implements MapFunction<Row, RuleMetaBea
         ruleMetaBean.setRuleModelId(ruleModelId);
         ruleMetaBean.setProfileUserBitmap(bitmap);
         ruleMetaBean.setCaculatorGroovyCode(caculatorGroovyCode);
+        ruleMetaBean.setRuleParamJson(ruleParamJson);
         ruleMetaBean.setCreatorName(creatorName);
         ruleMetaBean.setRuleStatus(ruleStatus);
     }

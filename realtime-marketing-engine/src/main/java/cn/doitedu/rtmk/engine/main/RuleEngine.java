@@ -58,6 +58,7 @@ public class RuleEngine {
                 " `rule_model_id` int   ,                 " +
                 " `rule_profile_user_bitmap` binary  ,    " +
                 " `caculator_groovy_code` string,         " +
+                " `rule_param_json` string,               " +
                 " `creator_name` string  ,                " +
                 " `rule_status` int   ,                   " +
                 " `create_time` timestamp(3)  ,           " +
@@ -76,24 +77,21 @@ public class RuleEngine {
         Table table = tenv.sqlQuery("select * from rule_meta_cdc");
         DataStream<Row> rowDataStream = tenv.toChangelogStream(table);
 
-
         DataStream<RuleMetaBean> ruleMetaBeanStream = rowDataStream.map(new Row2RuleMetaBeanMapFunction()).filter(Objects::nonNull);
-
 
         // 将规则元信息流广播出去
         BroadcastStream<RuleMetaBean> ruleMetaBeanBroadcastStream = ruleMetaBeanStream.broadcast(FlinkStateDescriptors.ruleMetaBeanMapStateDescriptor);
 
 
         // 连接用户行为事件流  和  规则变更数据流
-
         DataStream<RuleMatchResult> resultStream = userEventStream
                 .keyBy(UserEvent::getGuid)
                 .connect(ruleMetaBeanBroadcastStream)
                 // 处理用户事件，进行规则运行和匹配
                 .process(new RuleMatchProcessFunction());
 
+        // 打印规则匹配结果
         resultStream.print();
-
 
         env.execute();
     }

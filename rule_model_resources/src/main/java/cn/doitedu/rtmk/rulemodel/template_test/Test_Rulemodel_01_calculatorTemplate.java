@@ -93,7 +93,7 @@ public class Test_Rulemodel_01_calculatorTemplate {
 
 
 
-        Template template = Engine.use().getTemplate("D:\\IdeaProjects\\doe-data\\rule_model_resources\\caculator_groovy_templates\\rulemodel_01_caculator.template");
+        Template template = Engine.use().getTemplate("D:\\IdeaProjects\\doe-data\\rule_model_resources\\templates\\rule_calculator\\rulemodel_01_caculator.template");
 
         HashMap<String, Object> data = new HashMap<>();
 
@@ -150,11 +150,13 @@ public class Test_Rulemodel_01_calculatorTemplate {
         // 调用1000次进行性能测试
         long start = System.currentTimeMillis();
         for(int i=0;i<1000;i++) {
-            if(i % 10 == 0 ) {
+            caculator.calc(e1);
+
+            /*if(i % 10 == 0 ) {
                 caculator.calc(e1);  // 1/10概率符合规则参数要求
             }else{
                 caculator.calc(e5);
-            }
+            }*/
         }
         long end = System.currentTimeMillis();
         System.out.println(end-start);  // 耗时约159ms

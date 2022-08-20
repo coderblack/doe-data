@@ -39,6 +39,7 @@ public class RuleMetaBean {
     private int ruleModelId;
     private RoaringBitmap profileUserBitmap;
     private String caculatorGroovyCode;
+    private String ruleParamJson;
     private String creatorName;
     private int ruleStatus;
 

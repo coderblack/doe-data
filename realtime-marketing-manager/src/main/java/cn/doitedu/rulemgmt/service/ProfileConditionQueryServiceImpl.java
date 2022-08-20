@@ -54,37 +54,37 @@ public class ProfileConditionQueryServiceImpl implements ProfileConditionQuerySe
             switch (compareType){
                 case "lt":
                     RangeQueryBuilder lt = QueryBuilders.rangeQuery(tagId).lt(compareValue);
-                    if(StringUtils.isNumeric(compareValue)){
-                        lt = QueryBuilders.rangeQuery(tagId).lt(Integer.parseInt(compareValue));
+                    if(compareValue.matches("\\d+(.\\d+)?")){
+                        lt = QueryBuilders.rangeQuery(tagId).lt(Float.parseFloat(compareValue));
                     }
                     boolQueryBuilder.must(lt);
                     break;
                 case "gt":
                     RangeQueryBuilder gt = QueryBuilders.rangeQuery(tagId).gt(compareValue);
-                    if(StringUtils.isNumeric(compareValue)){
-                        gt = QueryBuilders.rangeQuery(tagId).gt(Integer.parseInt(compareValue));
+                    if(compareValue.matches("\\d+(.\\d+)?")){
+                        gt = QueryBuilders.rangeQuery(tagId).gt(Float.parseFloat(compareValue));
                     }
                     boolQueryBuilder.must(gt);
                     break;
                 case "ge":
                     RangeQueryBuilder gte = QueryBuilders.rangeQuery(tagId).gte(compareValue);
-                    if(StringUtils.isNumeric(compareValue)){
-                        gte = QueryBuilders.rangeQuery(tagId).gte(Integer.parseInt(compareValue));
+                    if(compareValue.matches("\\d+(.\\d+)?")){
+                        gte = QueryBuilders.rangeQuery(tagId).gte(Float.parseFloat(compareValue));
                     }
                     boolQueryBuilder.must(gte);
                     break;
                 case "le":
                     RangeQueryBuilder lte = QueryBuilders.rangeQuery(tagId).lte(compareValue);
-                    if(StringUtils.isNumeric(compareValue)){
-                        lte = QueryBuilders.rangeQuery(tagId).lte(Integer.parseInt(compareValue));
+                    if(compareValue.matches("\\d+(.\\d+)?")){
+                        lte = QueryBuilders.rangeQuery(tagId).lte(Float.parseFloat(compareValue));
                     }
                     boolQueryBuilder.must(lte);
                     break;
                 case "between":
                     String[] fromTo = compareValue.split(",");
                     RangeQueryBuilder btw = QueryBuilders.rangeQuery(tagId).from(fromTo[0],true).to(fromTo[1],true);
-                    if(StringUtils.isNumeric(fromTo[0]) && StringUtils.isNumeric(fromTo[1])){
-                        btw = QueryBuilders.rangeQuery(tagId).from(Integer.parseInt(fromTo[0]),true).to(Integer.parseInt(fromTo[1]),true);
+                    if(fromTo[0].matches("\\d+(.\\d+)?") && fromTo[1].matches("\\d+(.\\d+)?")){
+                        btw = QueryBuilders.rangeQuery(tagId).from(Float.parseFloat(fromTo[0]),true).to(Float.parseFloat(fromTo[1]),true);
                     }
                     boolQueryBuilder.must(btw);
                     break;
