@@ -10,13 +10,17 @@ import com.jfinal.template.Engine;
 import com.jfinal.template.Template;
 import org.roaringbitmap.RoaringBitmap;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 
 
 /**
@@ -60,21 +64,15 @@ public class RuleManagementController {
         /**
          * 一、 人群画像处理
          */
-        System.out.println("------查询画像人群 开始---------");
         // 调用service查询满足规则画像条件的人群
         RoaringBitmap bitmap = profileConditionQueryServiceImpl.queryProfileUsers(ruleDefineJsonObject.getJSONArray("profileCondition"));
-        System.out.println(bitmap.contains(3));
-        System.out.println(bitmap.contains(5));
-        System.out.println("------查询画像人群 完成---------");
+        System.out.println("人群画像圈选完成： " + bitmap.toString());
 
-        System.out.println("");
-        System.out.println("");
 
 
         /**
          * 二、 规则的行为条件历史值处理
          */
-        System.out.println("------查询行为次数类条件的历史值 开始---------");
         // 解析出行为次数条件，到 doris中去查询各条件的历史值，并发布到 redis
         JSONObject actionCountConditionJsonObject = ruleDefineJsonObject.getJSONObject("actionCountCondition");  // 整个规则的参数
         JSONArray eventParamsJsonArray = actionCountConditionJsonObject.getJSONArray("eventParams");  // 事件次数条件的参数
@@ -85,8 +83,7 @@ public class RuleManagementController {
             // 调用行为条件查询服务，传入行为条件参数，以及人群bitmap
             actionConditionQueryService.queryActionCount(eventParamJsonObject,ruleId,bitmap);
         }
-        System.out.println("------查询行为次数类条件的历史值 结束---------");
-
+        System.out.println("规则条件历史数据查询发布完成" );
 
         /**
          * 三、 规则的groovy运算代码处理
@@ -113,11 +110,10 @@ public class RuleManagementController {
         String groovyCaculatorCode = template.renderToString(data);
 
         /**
-         * 四、 正式发布规则
-         *  把3类信息，放入规则平台的元数据库
-         *  人群 bitmap
-         *  规则参数（大json）
-         *  规则运算的 groovy 代码
+         * 四、 正式发布规则，把 3类信息，放入规则平台的元数据库：
+         *  1. 人群 bitmap
+         *  2. 规则参数（大json）
+         *  3. 规则运算的 groovy 代码
          */
 
         Integer ruleModelId = ruleDefineJsonObject.getInteger("ruleModelId");

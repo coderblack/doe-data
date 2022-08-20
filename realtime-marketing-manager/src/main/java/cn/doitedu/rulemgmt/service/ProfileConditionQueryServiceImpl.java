@@ -2,6 +2,7 @@ package cn.doitedu.rulemgmt.service;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -50,22 +51,52 @@ public class ProfileConditionQueryServiceImpl implements ProfileConditionQuerySe
             String compareType = paramObject.getString("compareType");
             String compareValue = paramObject.getString("compareValue");
 
-            if("lt".equals(compareType)) {
-                RangeQueryBuilder lt = QueryBuilders.rangeQuery(tagId).lt(compareValue);
-                boolQueryBuilder.must(lt);
-            }else if("gt".equals(compareType)){
-                RangeQueryBuilder gt = QueryBuilders.rangeQuery(tagId).gt(compareValue);
-                boolQueryBuilder.must(gt);
+            switch (compareType){
+                case "lt":
+                    RangeQueryBuilder lt = QueryBuilders.rangeQuery(tagId).lt(compareValue);
+                    if(StringUtils.isNumeric(compareValue)){
+                        lt = QueryBuilders.rangeQuery(tagId).lt(Integer.parseInt(compareValue));
+                    }
+                    boolQueryBuilder.must(lt);
+                    break;
+                case "gt":
+                    RangeQueryBuilder gt = QueryBuilders.rangeQuery(tagId).gt(compareValue);
+                    if(StringUtils.isNumeric(compareValue)){
+                        gt = QueryBuilders.rangeQuery(tagId).gt(Integer.parseInt(compareValue));
+                    }
+                    boolQueryBuilder.must(gt);
+                    break;
+                case "ge":
+                    RangeQueryBuilder gte = QueryBuilders.rangeQuery(tagId).gte(compareValue);
+                    if(StringUtils.isNumeric(compareValue)){
+                        gte = QueryBuilders.rangeQuery(tagId).gte(Integer.parseInt(compareValue));
+                    }
+                    boolQueryBuilder.must(gte);
+                    break;
+                case "le":
+                    RangeQueryBuilder lte = QueryBuilders.rangeQuery(tagId).lte(compareValue);
+                    if(StringUtils.isNumeric(compareValue)){
+                        lte = QueryBuilders.rangeQuery(tagId).lte(Integer.parseInt(compareValue));
+                    }
+                    boolQueryBuilder.must(lte);
+                    break;
+                case "between":
+                    String[] fromTo = compareValue.split(",");
+                    RangeQueryBuilder btw = QueryBuilders.rangeQuery(tagId).from(fromTo[0],true).to(fromTo[1],true);
+                    if(StringUtils.isNumeric(fromTo[0]) && StringUtils.isNumeric(fromTo[1])){
+                        btw = QueryBuilders.rangeQuery(tagId).from(Integer.parseInt(fromTo[0]),true).to(Integer.parseInt(fromTo[1]),true);
+                    }
+                    boolQueryBuilder.must(btw);
+                    break;
+                default:
+                    MatchQueryBuilder matchQuery = QueryBuilders.matchQuery(tagId, compareValue);
+                    boolQueryBuilder.must(matchQuery);
             }
-            else{
-                MatchQueryBuilder matchQuery = QueryBuilders.matchQuery(tagId, compareValue);
-                boolQueryBuilder.must(matchQuery);
-            }
+
         }
 
         // 将查询条件构造成一个查询请求
         request.source(new SearchSourceBuilder().query(boolQueryBuilder));
-
 
         // 用es客户端，向es发出查询请求
         SearchResponse response = client.search(request, RequestOptions.DEFAULT);

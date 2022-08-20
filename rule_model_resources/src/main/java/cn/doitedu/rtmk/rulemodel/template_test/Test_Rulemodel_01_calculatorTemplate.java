@@ -86,9 +86,10 @@ public class Test_Rulemodel_01_calculatorTemplate {
                 "        \"dorisQueryTemplate\": \"action_count\"\n" +
                 "      }\n" +
                 "    ],\n" +
-                "    \"combineExpr\": \" res0 && (res1 || res2) \"\n" +
+                "    \"combineExpr\": \" res_0 && (res_1 || res_2) \"\n" +
                 "  }\n" +
                 "}";
+
 
 
 
@@ -119,6 +120,7 @@ public class Test_Rulemodel_01_calculatorTemplate {
         System.out.println("----------------编译加载代码，进行调用---------------------------");
         Jedis jedis = new Jedis("doitedu", 6379);
 
+
         Class aClass = new GroovyClassLoader().parseClass(code);
         RuleConditionCalculator caculator = (RuleConditionCalculator) aClass.newInstance();
         // 先初始化
@@ -130,20 +132,38 @@ public class Test_Rulemodel_01_calculatorTemplate {
          *   e2,  p1=v2 p2=v3 ,>=1
          *   e3,  p1=v1  ,>=2
          *
-         *  => res0 && (res1 || res2 )
+         *  => res_0 && (res_1 || res_2 )
          */
         // 造一个用户事件
         HashMap<String, String> properties = new HashMap<>();
-        properties.put("p1","v2");
+        properties.put("p1","v1");
         properties.put("p2","v3");
-        UserEvent e1 = new UserEvent(2, "e2", properties, 1000000);
+        UserEvent e1 = new UserEvent(1, "e1", properties, 1000000);
+
+        HashMap<String, String> properties5 = new HashMap<>();
+        properties5.put("p1","v2");
+        properties5.put("p2","v3");
+        UserEvent e5 = new UserEvent(1, "e5", properties, 1000000);
+
 
         // 调用运算机进行运算
-        caculator.calc(e1);
-
+        // 调用1000次进行性能测试
+        long start = System.currentTimeMillis();
+        for(int i=0;i<1000;i++) {
+            if(i % 10 == 0 ) {
+                caculator.calc(e1);  // 1/10概率符合规则参数要求
+            }else{
+                caculator.calc(e5);
+            }
+        }
+        long end = System.currentTimeMillis();
+        System.out.println(end-start);  // 耗时约159ms
 
 
         // 然后做匹配判断
+        System.out.println(caculator.isMatch(1));
+
+
 
 
 

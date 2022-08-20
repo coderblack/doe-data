@@ -9,7 +9,7 @@ public class RuleSystemMetaDaoImpl implements RuleSystemMetaDao {
 
     Connection conn;
     public RuleSystemMetaDaoImpl() throws SQLException {
-        conn = DriverManager.getConnection("jdbc:mysql://doitedu:3306/rtmk", "root", "root");
+        conn = DriverManager.getConnection("jdbc:mysql://doitedu:3306/rtmk?useUnicode=true&characterEncoding=utf8", "root", "root");
     }
 
     @Override
@@ -69,16 +69,18 @@ public class RuleSystemMetaDaoImpl implements RuleSystemMetaDao {
                                String ruleDefineParamsJson,
                                String ruleModelCaculatorGroovyCode) throws SQLException {
 
-        PreparedStatement preparedStatement = conn.prepareStatement("insert into rule_instance_definition (rule_id,rule_model_id,rule_profile_user_bitmap,caculator_groovy_code,creator_name,rule_status,create_time,update_time)  values (?,?,?,?,?,?,?,?)");
+        PreparedStatement preparedStatement = conn.prepareStatement(
+                "insert into rule_instance_definition (rule_id,rule_model_id,rule_profile_user_bitmap,caculator_groovy_code,rule_param_json,creator_name,rule_status,create_time,update_time)  values (?,?,?,?,?,?,?,?,?)");
 
         preparedStatement.setString(1,rule_id);
         preparedStatement.setInt(2,rule_model_id);
         preparedStatement.setBytes(3,bitmapBytes);
         preparedStatement.setString(4,ruleModelCaculatorGroovyCode);
-        preparedStatement.setString(5,creator_name);
-        preparedStatement.setInt(6,rule_status);
-        preparedStatement.setTimestamp(7,create_time);
-        preparedStatement.setTimestamp(8,update_time);
+        preparedStatement.setString(5,ruleDefineParamsJson);
+        preparedStatement.setString(6,creator_name);
+        preparedStatement.setInt(7,rule_status);
+        preparedStatement.setTimestamp(8,create_time);
+        preparedStatement.setTimestamp(9,update_time);
 
 
         boolean execute = preparedStatement.execute();

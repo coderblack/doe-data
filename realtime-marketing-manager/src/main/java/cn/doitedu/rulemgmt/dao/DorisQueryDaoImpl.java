@@ -28,20 +28,27 @@ public class DorisQueryDaoImpl implements DorisQueryDao {
         ResultSet resultSet = statement.executeQuery(sql);
 
         HashMap<String, String> guidAndCount = new HashMap<>();
+
         while(resultSet.next()){
             int guid = resultSet.getInt("guid");
             // 属于画像人群的用户，才把它的历史行为次数条件查询结果放入redis
             if(profileBitmap.contains(guid)) {
                 long cnt = resultSet.getLong("cnt");
                 guidAndCount.put(guid + "", cnt + "");
+
+                // 将查询的事件次数条件结果，攒够一批次，发布到规则引擎用的redis存储中，作为未来滚动运算的初始值
+                if(guidAndCount.size()==1000){
+                    jedis.hmset(ruleId+":"+conditionId,guidAndCount);
+                    guidAndCount.clear();
+                }
             }
         }
 
-
-        // 将查询的事件次数条件结果，发布到规则引擎用的redis存储中，作为未来滚动运算的初始值
+        // 将查最后不满1000的批次，发布到规则引擎用的redis存储中
         // ruleId:conditionId ->  HASH [guid->cnt]
-        jedis.hmset(ruleId+":"+conditionId,guidAndCount);
-
+        if(guidAndCount.size()>0) {
+            jedis.hmset(ruleId + ":" + conditionId, guidAndCount);
+        }
 
     }
 
