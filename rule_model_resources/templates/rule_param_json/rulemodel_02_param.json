@@ -90,12 +90,7 @@
             "compareType": "=",
             "compareValue": "page001"
           }
-        ],
-        "windowStart": "2022-08-01 12:00:00",
-        "windowEnd": "2022-08-30 12:00:00",
-        "eventCount": 3,
-        "conditionId": 1,
-        "dorisQueryTemplate": "action_count"
+        ]
       },
       {
         "eventId": "e3",
@@ -110,12 +105,7 @@
             "compareType": "=",
             "compareValue": "item003"
           }
-        ],
-        "windowStart": "2022-08-01 12:00:00",
-        "windowEnd": "2022-08-30 12:00:00",
-        "eventCount": 1,
-        "conditionId": 2,
-        "dorisQueryTemplate": "action_count"
+        ]
       },
       {
         "eventId": "e2",
@@ -125,15 +115,15 @@
             "compareType": "=",
             "compareValue": "page001"
           }
-        ],
-        "windowStart": "2022-08-01 12:00:00",
-        "windowEnd": "2022-08-30 12:00:00",
-        "eventCount": 2,
-        "conditionId": 3,
-        "dorisQueryTemplate": "action_count"
+        ]
       }
     ],
-    "seqCount": 2,
-    "conditionDorisQueryTemplate" : "actionSeqQueryTemplate"
-  }
+    "windowStart": "2022-08-01 12:00:00",
+    "windowEnd": "2022-08-30 12:00:00",
+    "conditionId": 4,
+    "dorisQueryTemplate": "action_seq",
+    "seqCount": 2
+  },
+  "rule_match_count": 2 ,
+  "combineExpr" : "res_0 && res_1"
 }

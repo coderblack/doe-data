@@ -1,5 +1,8 @@
 package cn.doitedu.rulemgmt.service;
 
+import cn.doitedu.rtmk.common.pojo.ActionSeqParam;
+import cn.doitedu.rtmk.common.pojo.AttributeParam;
+import cn.doitedu.rtmk.common.pojo.EventParam;
 import cn.doitedu.rulemgmt.dao.DorisQueryDaoImpl;
 import cn.doitedu.rulemgmt.dao.RuleSystemMetaDaoImpl;
 import cn.doitedu.rulemgmt.pojo.ActionAttributeParam;
@@ -8,12 +11,14 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.jfinal.template.Engine;
 import com.jfinal.template.Template;
+import lombok.extern.slf4j.Slf4j;
 import org.roaringbitmap.RoaringBitmap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 /**
  {
@@ -37,6 +42,7 @@ import java.util.HashMap;
  "dorisQueryTemplate":"action_count"
  }
  */
+@Slf4j
 @Service
 public class ActionConditionQueryServiceImpl implements ActionConditionQueryService {
 
@@ -50,7 +56,7 @@ public class ActionConditionQueryServiceImpl implements ActionConditionQueryServ
     }
 
     @Override
-    public void queryActionCount(JSONObject eventParamJsonObject, String ruleId, RoaringBitmap profileBitmap) throws SQLException {
+    public void processActionCountCondition(JSONObject eventParamJsonObject, String ruleId, RoaringBitmap profileBitmap) throws SQLException {
 
         // 从事件次数条件中，取出各条件参数
         String eventId = eventParamJsonObject.getString("eventId");
@@ -88,6 +94,31 @@ public class ActionConditionQueryServiceImpl implements ActionConditionQueryServ
 
     }
 
+    @Override
+    public void processActionSeqCondition(ActionSeqParam actionSeqParam, String ruleId, RoaringBitmap profileBitmap) throws SQLException {
+
+        HashMap<String, Object> data = new HashMap<>();
+
+        // 将需要的数据放入enjoy引擎的渲染数据载体中
+        data.put("windowStart",actionSeqParam.getWindowStart());
+        data.put("windowEnd",actionSeqParam.getWindowEnd());
+        data.put("eventParams",actionSeqParam.getEventParams());
+
+
+        // 利用enjoy模板引擎，通过规则参数，来动态拼接真正的查询sql
+        // 调用 dao类，来查询规则系统的元数据库中，行为次数条件所对应的doris查询sql模板
+        String sqlTemplateStr = ruleSystemMetaDao.getSqlTemplateByTemplateName(actionSeqParam.getDorisQueryTemplate());
+        Template template = Engine.use().getTemplateByString(sqlTemplateStr);
+        String sql = template.renderToString(data);
+        log.info("行为序列条件的doris查询sql: {}",sql);
+
+        // 调用doris查询dao，去执行这个sql，得到结果
+        dorisQueryDaoImpl.queryActionSeq(sql,ruleId, actionSeqParam ,profileBitmap);
+
+    }
+
+
+
 
     public static void main(String[] args) throws SQLException {
 
@@ -115,7 +146,7 @@ public class ActionConditionQueryServiceImpl implements ActionConditionQueryServ
 
         JSONObject jsonObject = JSON.parseObject(conditionJson);
 
-        service.queryActionCount(jsonObject,"rule001",RoaringBitmap.bitmapOf(1,2,3,4));
+        service.processActionCountCondition(jsonObject,"rule001",RoaringBitmap.bitmapOf(1,2,3,4));
 
 
     }

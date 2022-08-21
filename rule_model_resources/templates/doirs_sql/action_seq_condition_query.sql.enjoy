@@ -1,0 +1,14 @@
+select
+    guid,
+    group_concat(concat_ws('_',event_id,event_time),'^')
+from mall_app_events_detail
+where event_time >= '#(windowStart)'
+  and event_time <= '#(windowEnd)'
+  and
+  (
+    #for(eventParam: eventParams)
+    (event_id = '#(eventParam.eventId)' #for(attrParam: eventParam.attributeParams) and get_json_string(propJson,'$.#(attrParam.attributeName)') #(attrParam.compareType) '#(attrParam.compareValue)'  #end)
+    #if(for.last) #else OR #end
+    #end
+  )
+GROUP BY guid
