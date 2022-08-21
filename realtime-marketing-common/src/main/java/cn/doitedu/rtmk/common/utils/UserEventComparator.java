@@ -1,4 +1,4 @@
-package cn.doitedu.rtmk.engine.utils;
+package cn.doitedu.rtmk.common.utils;
 
 import cn.doitedu.rtmk.common.pojo.UserEvent;
 import com.alibaba.fastjson.JSONArray;

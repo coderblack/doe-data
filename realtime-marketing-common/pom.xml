@@ -29,6 +29,19 @@
             <version>1.18.24</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.roaringbitmap</groupId>
+            <artifactId>RoaringBitmap</artifactId>
+            <version>0.9.31</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-core</artifactId>
+            <version>1.14.4</version>
+        </dependency>
+
+
     </dependencies>
 
 </project>

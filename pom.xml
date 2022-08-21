@@ -13,10 +13,10 @@
         <module>data-etl</module>
         <module>tech-test</module>
         <module>realtime-dw</module>
-        <module>realtime-marketing</module>
         <module>data-export</module>
         <module>rule_model_resources</module>
         <module>realtime-marketing-common</module>
+        <module>realtime-marketing-engine</module>
     </modules>
 
     <properties>

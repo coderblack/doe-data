@@ -1,7 +1,7 @@
 package cn.doitedu.rtmk.engine.pojo;
 
 
-import cn.doitedu.rtmk.common.interfaces.RuleConditionCalculator;
+import cn.doitedu.rtmk.common.interfaces.RuleCalculator;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -43,7 +43,7 @@ public class RuleMetaBean {
     private String creatorName;
     private int ruleStatus;
 
-    private RuleConditionCalculator ruleConditionCalculator;
+    private RuleCalculator ruleCalculator;
 
 
 

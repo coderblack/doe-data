@@ -1,17 +1,15 @@
 package cn.doitedu.rtmk.rulemodel.template_test;
 
-import cn.doitedu.rtmk.common.interfaces.RuleConditionCalculator;
+import cn.doitedu.rtmk.common.interfaces.RuleCalculator;
 import cn.doitedu.rtmk.common.pojo.UserEvent;
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.jfinal.template.Engine;
 import com.jfinal.template.Template;
 import groovy.lang.GroovyClassLoader;
+import org.roaringbitmap.RoaringBitmap;
 import redis.clients.jedis.Jedis;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 
 public class Test_Rulemodel_01_calculatorTemplate {
@@ -21,6 +19,18 @@ public class Test_Rulemodel_01_calculatorTemplate {
         String ruleDefineJson = "{\n" +
                 "  \"ruleModelId\": \"1\",\n" +
                 "  \"ruleId\": \"rule001\",\n" +
+                "  \"ruleTrigEvent\": {\n" +
+                "    \"eventId\": \"e6\",\n" +
+                "    \"attributeParams\": [\n" +
+                "      {\n" +
+                "        \"attributeName\": \"pageId\",\n" +
+                "        \"compareType\": \"=\",\n" +
+                "        \"compareValue\": \"page001\"\n" +
+                "      }\n" +
+                "    ],\n" +
+                "    \"windowStart\": \"2022-08-01 12:00:00\",\n" +
+                "    \"windowEnd\": \"2022-08-30 12:00:00\"\n" +
+                "  }," +
                 "  \"profileCondition\": [\n" +
                 "    {\n" +
                 "      \"tagId\": \"tg01\",\n" +
@@ -114,7 +124,6 @@ public class Test_Rulemodel_01_calculatorTemplate {
 
         // 渲染groovy代码
         String code = template.renderToString(data);
-
         System.out.println(code);
 
         System.out.println("----------------编译加载代码，进行调用---------------------------");
@@ -122,9 +131,9 @@ public class Test_Rulemodel_01_calculatorTemplate {
 
 
         Class aClass = new GroovyClassLoader().parseClass(code);
-        RuleConditionCalculator caculator = (RuleConditionCalculator) aClass.newInstance();
+        RuleCalculator caculator = (RuleCalculator) aClass.newInstance();
         // 先初始化
-        caculator.init(jedis,ruleDefineJsonObject);
+        caculator.init(jedis,ruleDefineJsonObject, RoaringBitmap.bitmapOf(1,2,3,4,5),null);
 
         /**
          * 测试规则参数：
@@ -138,19 +147,19 @@ public class Test_Rulemodel_01_calculatorTemplate {
         HashMap<String, String> properties = new HashMap<>();
         properties.put("p1","v1");
         properties.put("p2","v3");
-        UserEvent e1 = new UserEvent(1, "e1", properties, 1000000);
+        UserEvent e1 = new UserEvent(1, "e1", properties, 1661046973000L);
 
         HashMap<String, String> properties5 = new HashMap<>();
         properties5.put("p1","v2");
         properties5.put("p2","v3");
-        UserEvent e5 = new UserEvent(1, "e5", properties, 1000000);
+        UserEvent e5 = new UserEvent(1, "e5", properties, 1661046973000L);
 
 
         // 调用运算机进行运算
         // 调用1000次进行性能测试
         long start = System.currentTimeMillis();
-        for(int i=0;i<1000;i++) {
-            caculator.calc(e1);
+        for(int i=0;i<1;i++) {
+            caculator.process(e1);
 
             /*if(i % 10 == 0 ) {
                 caculator.calc(e1);  // 1/10概率符合规则参数要求

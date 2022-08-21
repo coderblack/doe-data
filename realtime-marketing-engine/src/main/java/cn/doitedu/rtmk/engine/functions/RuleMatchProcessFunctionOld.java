@@ -30,7 +30,7 @@ import java.util.Map;
  * @Desc: 规则运算、匹配的核心计算函数
  **/
 @Slf4j
-public class RuleMatchProcessFunction extends KeyedBroadcastProcessFunction<Integer, UserEvent, RuleMetaBean, JSONObject> {
+public class RuleMatchProcessFunctionOld extends KeyedBroadcastProcessFunction<Integer, UserEvent, RuleMetaBean, JSONObject> {
     private Jedis jedis;
 
     MapState<Long, List<String>> timerState;
@@ -56,9 +56,39 @@ public class RuleMatchProcessFunction extends KeyedBroadcastProcessFunction<Inte
             // 取出规则的封装对象
             RuleMetaBean ruleMetaBean = ruleEntry.getValue();
 
-            // 调用规则的运算机，对输入事件进行处理
-            ruleMetaBean.getRuleCalculator().process(userEvent);
+            // 取出规则的画像人群bitmap
+            RoaringBitmap profileUserBitmap = ruleMetaBean.getProfileUserBitmap();
 
+            // 判断本事件的行为人，是否属于本规则的画像人群
+            if (profileUserBitmap.contains(userEvent.getGuid())) {
+
+                // 取出规则的参数json
+                JSONObject ruleParamJsonObject = JSON.parseObject(ruleMetaBean.getRuleParamJson());
+
+                // 取出规则的触发事件条件参数json
+                JSONObject ruleTrigEventJsonObject = ruleParamJsonObject.getJSONObject("ruleTrigEvent");
+
+                // 判断用户行为事件，如果本事件是规则的触发条件，则进行规则的匹配判断
+                if (UserEventComparator.userEventIsEqualParam(userEvent, ruleTrigEventJsonObject)) {
+
+                    // 如果是触发事件，则判断本行为人是否已经满足了本规则的所有条件
+                    boolean isMatch = ruleMetaBean.getRuleCalculator().isMatch(userEvent.getGuid());
+
+                    log.info("用户:{} ,触发事件:{},规则:{},规则匹配结果:{}",userEvent.getGuid(),userEvent.getEventId(),ruleEntry.getKey(),isMatch);
+                    // 如果已满足，则输出本规则的触达信息
+                    if(isMatch) {
+                        RuleMatchResult res = new RuleMatchResult(userEvent.getGuid(), ruleEntry.getKey(), System.currentTimeMillis());
+                        out.collect(JSON.parseObject(JSON.toJSONString(res)));
+                    }
+
+                }
+                // 判断用户行为事件，如果本事件不是规则的触发事件，则进行规则的条件统计运算
+                else {
+                    // 做规则运算
+                    ruleMetaBean.getRuleCalculator().calc(userEvent);
+                    log.info("收到用户:{} ,行为事件:{}, 规则条件运算：{}", userEvent.getGuid(), userEvent.getEventId(), ruleEntry.getKey());
+                }
+            }
         }
 
         // 判断该规则，是否需要定时功能，比如（要求发生A后的15分钟内没有发生B，则要输出触达信息）

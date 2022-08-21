@@ -1,4 +1,5 @@
-package cn.doitedu.rtmk.rulemodel.caculator.groovy
+package groovy
+
 
 import cn.doitedu.rtmk.common.interfaces.RuleCalculator
 import cn.doitedu.rtmk.common.pojo.UserEvent
@@ -9,13 +10,9 @@ import org.apache.commons.lang3.time.DateUtils
 import org.apache.flink.util.Collector
 import org.roaringbitmap.RoaringBitmap
 import redis.clients.jedis.Jedis
-import groovy.util.logging.Slf4j
 
-/**
- * 规则运算机的：规则模型01实现类
- */
-@Slf4j
-class RuleModel_01_Calculator implements RuleCalculator {
+class A {
+
 
     private Jedis jedis;
     private JSONObject ruleDefineParamJsonObject;
@@ -34,8 +31,6 @@ class RuleModel_01_Calculator implements RuleCalculator {
      */
     @Override
     void init(Jedis jedis, JSONObject ruleDefineParamJsonObject, RoaringBitmap profileUserBitmap, Collector<JSONObject> out) {
-
-        //log.info("规则运算机对象被初始化......")
         this.jedis = jedis;
         this.ruleDefineParamJsonObject = ruleDefineParamJsonObject;
         this.profileUserBitmap = profileUserBitmap;
@@ -73,7 +68,7 @@ class RuleModel_01_Calculator implements RuleCalculator {
                 // 如果是触发事件，则判断本行为人是否已经满足了本规则的所有条件
                 boolean isMatch = isMatch(userEvent.getGuid());
 
-                log.info("用户:{} ,触发事件:{},规则:{},规则匹配结果:{}",userEvent.getGuid(),userEvent.getEventId(),ruleId,isMatch);
+                //log.info("用户:{} ,触发事件:{},规则:{},规则匹配结果:{}",userEvent.getGuid(),userEvent.getEventId(),ruleEntry.getKey(),isMatch);
 
                 // 如果已满足，则输出本规则的触达信息
                 if (isMatch) {
@@ -86,7 +81,7 @@ class RuleModel_01_Calculator implements RuleCalculator {
             else {
                 // 做规则条件的统计运算
                 calc(userEvent);
-                log.info("收到用户:{} ,行为事件:{}, 规则条件运算：{}", userEvent.getGuid(), userEvent.getEventId(), ruleId);
+                //log.info("收到用户:{} ,行为事件:{}, 规则条件运算：{}", userEvent.getGuid(), userEvent.getEventId(), ruleEntry.getKey());
             }
         }
     }
@@ -120,15 +115,12 @@ class RuleModel_01_Calculator implements RuleCalculator {
 
             // 1.先判断输入的用户行为事件，是否处于规则参数约定的计算时间窗口内
             if (eventTime >= startTime && eventTime <= endTime) {
-                //log.info("用户输入事件的时间，符合参数窗口要求")
+
                 // 取出本条件的条件id
                 Integer conditionId = eventParam.getInteger("conditionId");
 
                 // 2. 判断当前输入的事件是否匹配条件参数中要求的事件
                 if(UserEventComparator.userEventIsEqualParam(userEvent,eventParam)){
-
-                    //log.info("用户输入事件，与规则条件的事件参数吻合，即将更新redis的计算结果")
-
                     // 如果是，就需要去redis中，给这个用户的，这个规则的，这个条件的次数+1
                     jedis.hincrBy(ruleId + ":" + conditionId, userEvent.getGuid() + "", 1);
                 }
@@ -157,22 +149,42 @@ class RuleModel_01_Calculator implements RuleCalculator {
         JSONArray eventParams = eventCountConditionParam.getJSONArray("eventParams");
 
 
-        #for(eventParam : eventParams)
-        JSONObject eventParam_#(for.index) = eventParams.getJSONObject(#(for.index));
-        Integer conditionId_#(for.index) = eventParam_#(for.index).getInteger("conditionId");
+        JSONObject eventParam_0 = eventParams.getJSONObject(0);
+        Integer conditionId_0 = eventParam_0.getInteger("conditionId");
 
-        Integer eventCountParam_#(for.index) = eventParam_#(for.index).getInteger("eventCount");
+        Integer eventCountParam_0 = eventParam_0.getInteger("eventCount");
 
-        String realCountStr_#(for.index) = jedis.hget(ruleId + ":" + conditionId_#(for.index), guid + "");
-        int realCount_#(for.index) = Integer.parseInt(realCountStr_#(for.index) == null ? "0" : realCountStr_#(for.index));
+        String realCountStr_0 = jedis.hget(ruleId + ":" + conditionId_0, guid + "");
+        int realCount_0 = Integer.parseInt(realCountStr_0 == null ? "0" : realCountStr_0);
 
-        boolean res_#(for.index) = realCount_#(for.index) >= eventCountParam_#(for.index) ;
+        boolean res_0 = realCount_0 >= eventCountParam_0 ;
 
-        #end
+        JSONObject eventParam_1 = eventParams.getJSONObject(1);
+        Integer conditionId_1 = eventParam_1.getInteger("conditionId");
+
+        Integer eventCountParam_1 = eventParam_1.getInteger("eventCount");
+
+        String realCountStr_1 = jedis.hget(ruleId + ":" + conditionId_1, guid + "");
+        int realCount_1 = Integer.parseInt(realCountStr_1 == null ? "0" : realCountStr_1);
+
+        boolean res_1 = realCount_1 >= eventCountParam_1 ;
+
+        JSONObject eventParam_2 = eventParams.getJSONObject(2);
+        Integer conditionId_2 = eventParam_2.getInteger("conditionId");
+
+        Integer eventCountParam_2 = eventParam_2.getInteger("eventCount");
+
+        String realCountStr_2 = jedis.hget(ruleId + ":" + conditionId_2, guid + "");
+        int realCount_2 = Integer.parseInt(realCountStr_2 == null ? "0" : realCountStr_2);
+
+        boolean res_2 = realCount_2 >= eventCountParam_2 ;
 
 
 
-        return  #(combineExpr);
+
+        return   res_0 && (res_1 || res_2) ;
     }
+
+
 
 }

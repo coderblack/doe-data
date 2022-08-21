@@ -6,7 +6,7 @@ import com.alibaba.fastjson.JSONArray
 import com.alibaba.fastjson.JSONObject
 import redis.clients.jedis.Jedis
 
-class EventCountCalculatorGroovy implements RuleCalculator {
+class EventCountConditionCalculatorGroovy implements RuleConditionCalculator {
 
     private Jedis jedis;
     private JSONObject ruleDefineParamJsonObject;
@@ -56,40 +56,22 @@ class EventCountCalculatorGroovy implements RuleCalculator {
         JSONArray eventParams = eventCountConditionParam.getJSONArray("eventParams");
 
 
-        JSONObject eventParam_0 = eventParams.getJSONObject(0);
-        Integer conditionId_0 = eventParam_0.getInteger("conditionId");
+        #for(eventParam : eventParams)
+        JSONObject eventParam_#(for.index) = eventParams.getJSONObject(#(for.index));
+        Integer conditionId_#(for.index) = eventParam_#(for.index).getInteger("conditionId");
 
-        Integer eventCountParam_0 = eventParam_0.getInteger("eventCount");
+        Integer eventCountParam_#(for.index) = eventParam_#(for.index).getInteger("eventCount");
 
-        String realCountStr_0 = jedis.hget(ruleId + ":" + conditionId_0, guid + "");
-        int realCount_0 = Integer.parseInt(realCountStr_0 == null ? "0" : realCountStr_0);
+        String realCountStr_#(for.index) = jedis.hget(ruleId + ":" + conditionId_#(for.index), guid + "");
+        int realCount_#(for.index) = Integer.parseInt(realCountStr_#(for.index) == null ? "0" : realCountStr_#(for.index));
 
-        boolean res_0 = realCount_0 >= eventCountParam_0 ;
+        boolean res_#(for.index) = realCount_#(for.index) >= eventCountParam_#(for.index) ;
 
-        JSONObject eventParam_1 = eventParams.getJSONObject(1);
-        Integer conditionId_1 = eventParam_1.getInteger("conditionId");
-
-        Integer eventCountParam_1 = eventParam_1.getInteger("eventCount");
-
-        String realCountStr_1 = jedis.hget(ruleId + ":" + conditionId_1, guid + "");
-        int realCount_1 = Integer.parseInt(realCountStr_1 == null ? "0" : realCountStr_1);
-
-        boolean res_1 = realCount_1 >= eventCountParam_1 ;
-
-        JSONObject eventParam_2 = eventParams.getJSONObject(2);
-        Integer conditionId_2 = eventParam_2.getInteger("conditionId");
-
-        Integer eventCountParam_2 = eventParam_2.getInteger("eventCount");
-
-        String realCountStr_2 = jedis.hget(ruleId + ":" + conditionId_2, guid + "");
-        int realCount_2 = Integer.parseInt(realCountStr_2 == null ? "0" : realCountStr_2);
-
-        boolean res_2 = realCount_2 >= eventCountParam_2 ;
+        #end
 
 
 
-
-        return   res_0 && (res_1 || res_2) ;
+        return  #(combineExpr);
     }
 
     private boolean judgeEventAttribute(UserEvent userEvent, JSONArray attributeParams) {
