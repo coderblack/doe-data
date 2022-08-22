@@ -236,6 +236,40 @@ public class RuleManagementController {
 
     }
 
+
+
+    @RequestMapping("/api/publish/addrule/model03")
+    public void publishRuleModel03(@RequestBody String ruleDefineJson) throws IOException, SQLException {
+
+        log.info(ruleDefineJson);
+
+        JSONObject ruleDefineJsonObject = JSON.parseObject(ruleDefineJson);
+        String ruleId = ruleDefineJsonObject.getString("ruleId");
+
+
+
+        /* *
+         * 一、 规则的groovy运算代码处理
+         */
+        String groovyCode = ruleSystemMetaService.findRuleModelGroovyTemplate(ruleDefineJsonObject.getInteger("ruleModelId"));
+
+
+        /**
+         * 二、 正式发布规则，把 3类信息，放入规则平台的元数据库：
+         *  1. 规则参数（大json）
+         *  1. 规则运算的 groovy 代码
+         */
+
+        Integer ruleModelId = ruleDefineJsonObject.getInteger("ruleModelId");
+        String creatorName = "多易教育@深似海男人";
+
+        ruleSystemMetaService.publishRuleInstance(ruleId,ruleModelId,creatorName,1,null,ruleDefineJson,groovyCode);
+
+    }
+
+
+
+
     // 测试： 手动调用controller的规则发布功能
     public static void main(String[] args) throws IOException, SQLException {
 

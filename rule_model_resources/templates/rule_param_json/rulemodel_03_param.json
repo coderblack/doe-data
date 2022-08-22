@@ -1,0 +1,22 @@
+{
+  "ruleModelId": "3",
+  "ruleId": "m3-r01",
+  "ruleTrigEvent": {
+    "eventId": "submitOrder",
+    "attributeParams": [
+      {
+        "attributeName": "pageId",
+        "compareType": "=",
+        "compareValue": "page001"
+      }
+    ],
+    "windowStart": "",
+    "windowEnd": "2022-08-30 12:00:00"
+  },
+  "interval_time": "10000",
+  "checkEvent": {
+    "eventId": "payOrder",
+    "eventAttribute": "orderId"
+  },
+  "rule_match_count": 2
+}

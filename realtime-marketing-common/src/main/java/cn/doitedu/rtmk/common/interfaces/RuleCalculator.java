@@ -2,9 +2,9 @@ package cn.doitedu.rtmk.common.interfaces;
 
 import cn.doitedu.rtmk.common.pojo.UserEvent;
 import com.alibaba.fastjson.JSONObject;
-import org.apache.flink.util.Collector;
 import org.roaringbitmap.RoaringBitmap;
-import redis.clients.jedis.Jedis;
+
+import java.util.List;
 
 /**
  * @Author: deep as the sea
@@ -18,19 +18,17 @@ public interface RuleCalculator {
 
     /**
      * 规则运算机的初始化方法
-     * @param jedis redis客户端
      * @param ruleDefineParamJsonObject 规则定义参数整体json
      * @param profileUserBitmap 人群画像bitmap
-     * @param out flink的结果输出器
      */
-    void init(Jedis jedis, JSONObject ruleDefineParamJsonObject, RoaringBitmap profileUserBitmap, Collector<JSONObject> out);
+    void init(JSONObject ruleDefineParamJsonObject, RoaringBitmap profileUserBitmap);
 
 
     /**
      * 对输入事件进行规则处理的入口方法
      * @param userEvent 输入的用户行为事件
      */
-    void process(UserEvent userEvent);
+    List<JSONObject> process(UserEvent userEvent);
 
 
     /**

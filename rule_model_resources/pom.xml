@@ -60,7 +60,16 @@
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-core</artifactId>
             <version>1.14.4</version>
+            <scope>provided</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-streaming-java_2.12</artifactId>
+            <version>1.14.4</version>
+            <scope>provided</scope>
+        </dependency>
+
 
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -80,6 +89,8 @@
             <artifactId>log4j</artifactId>
             <version>1.2.16</version>
         </dependency>
+
+
 
 
     </dependencies>

@@ -133,7 +133,7 @@ public class Test_Rulemodel_01_calculatorTemplate {
         Class aClass = new GroovyClassLoader().parseClass(code);
         RuleCalculator caculator = (RuleCalculator) aClass.newInstance();
         // 先初始化
-        caculator.init(jedis,ruleDefineJsonObject, RoaringBitmap.bitmapOf(1,2,3,4,5),null);
+        caculator.init(ruleDefineJsonObject,RoaringBitmap.bitmapOf(1,2,3,4,5));
 
         /**
          * 测试规则参数：

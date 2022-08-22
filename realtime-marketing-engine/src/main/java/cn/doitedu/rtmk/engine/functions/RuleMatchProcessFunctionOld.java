@@ -144,7 +144,7 @@ public class RuleMatchProcessFunctionOld extends KeyedBroadcastProcessFunction<I
                 RuleCalculator ruleConditionCalculator = (RuleCalculator) aClass.newInstance();
 
                 // 对规则运算器做初始化
-                ruleConditionCalculator.init(jedis, JSON.parseObject(ruleMetaBean.getRuleParamJson()),ruleMetaBean.getProfileUserBitmap(),out);
+                ruleConditionCalculator.init( JSON.parseObject(ruleMetaBean.getRuleParamJson()),ruleMetaBean.getProfileUserBitmap());
 
                 // 然后将创建好的运算机对象，填充到ruleMetaBean
                 ruleMetaBean.setRuleCalculator(ruleConditionCalculator);

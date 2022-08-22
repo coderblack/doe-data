@@ -10,6 +10,8 @@ import org.apache.commons.lang3.time.DateUtils
 import org.apache.flink.util.Collector
 import org.roaringbitmap.RoaringBitmap
 import redis.clients.jedis.Jedis
+import java.util.List
+import java.util.ArrayList
 
 /**
  * 规则运算机的：规则模型01实现类
@@ -18,6 +20,7 @@ import redis.clients.jedis.Jedis
 class RuleModel_02_Calculator_Groovy implements RuleCalculator {
 
     private Jedis jedis;
+
     // 规则的参数整体json对象
     private JSONObject ruleDefineParamJsonObject;
 
@@ -39,15 +42,9 @@ class RuleModel_02_Calculator_Groovy implements RuleCalculator {
     // 规则的触达次数上限
     int ruleMatchMaxCount;
 
-
     // 人群画像圈选bitmap
     private RoaringBitmap profileUserBitmap;
 
-    // flink的结果输出器
-    private Collector<JSONObject> out;
-
-    // 结果数据结构json封装
-    JSONObject resultObject;
 
 
     /**
@@ -57,24 +54,21 @@ class RuleModel_02_Calculator_Groovy implements RuleCalculator {
      * @param ruleDefineParamJsonObject 整个规则的json参数
      */
     @Override
-    void init(Jedis jedis, JSONObject ruleDefineParamJsonObject, RoaringBitmap profileUserBitmap, Collector<JSONObject> out) {
-        this.jedis = jedis;
+    void init(JSONObject ruleDefineParamJsonObject, RoaringBitmap profileUserBitmap) {
+        this.jedis = new Jedis("doitedu",6379);
         this.ruleDefineParamJsonObject = ruleDefineParamJsonObject;
         this.profileUserBitmap = profileUserBitmap;
-        this.out = out;
+
 
         // 取到规则的标识id
-        ruleId = ruleDefineParamJsonObject.getString("ruleId");
+        this.ruleId = ruleDefineParamJsonObject.getString("ruleId");
+        this.ruleMatchMaxCount = ruleDefineParamJsonObject.getInteger("rule_match_count");
 
         // 取到规则的事件次数条件
         this.eventCountConditionParam = ruleDefineParamJsonObject.getJSONObject("actionCountCondition");
         this.actionSeqCondition = ruleDefineParamJsonObject.getJSONObject("actionSeqCondition");
         this.actionSeqConditionId = actionSeqCondition.getInteger("conditionId")
         this.eventParams = actionSeqCondition.getJSONArray("eventParams")
-
-        // 构造一个匹配结果输出对象
-        resultObject = new JSONObject();
-        resultObject.put("ruleId", ruleId)
 
     }
 
@@ -84,7 +78,8 @@ class RuleModel_02_Calculator_Groovy implements RuleCalculator {
      * @param userEvent 输入的用户行为事件
      */
     @Override
-    public void process(UserEvent userEvent) {
+    public List<JSONObject> process(UserEvent userEvent) {
+        List<JSONObject> resLst = new ArrayList<JSONObject>();
 
         // 判断本事件的行为人，是否属于本规则的画像人群
         if (profileUserBitmap.contains(userEvent.getGuid())) {
@@ -94,6 +89,12 @@ class RuleModel_02_Calculator_Groovy implements RuleCalculator {
 
             // 判断用户行为事件，如果本事件是规则的触发条件，则进行规则的匹配判断
             if (UserEventComparator.userEventIsEqualParam(userEvent, ruleTrigEventJsonObject)) {
+                JSONObject resObj1 = new JSONObject();
+                resObj1.put("ruleId",ruleId);
+                resObj1.put("resType","trigger");
+                resObj1.put("guid",userEvent.getGuid());
+                resObj1.put("timestamp",System.currentTimeMillis());
+                resLst.add(resObj1);
 
                 // 如果是触发事件，则判断本行为人是否已经满足了本规则的所有条件
                 boolean isMatch = isMatch(userEvent.getGuid());
@@ -102,9 +103,12 @@ class RuleModel_02_Calculator_Groovy implements RuleCalculator {
 
                 // 如果已满足，则输出本规则的触达信息
                 if (isMatch) {
-                    resultObject.put("guid", userEvent.getGuid());
-                    resultObject.put("matchTime", System.currentTimeMillis())
-                    out.collect(resultObject);
+                    JSONObject resObj2 = new JSONObject();
+                    resObj2.put("ruleId",ruleId);
+                    resObj2.put("resType","match");
+                    resObj2.put("guid",userEvent.getGuid());
+                    resObj2.put("timestamp",System.currentTimeMillis());
+                    resLst.add(resObj2);
                 }
             }
             // 判断用户行为事件，如果本事件不是规则的触发事件，则进行规则的条件统计运算
@@ -112,8 +116,15 @@ class RuleModel_02_Calculator_Groovy implements RuleCalculator {
                 // 做规则条件的统计运算
                 calc(userEvent);
                 log.debug("收到用户:{} ,行为事件:{}, 规则条件运算：{}", userEvent.getGuid(), userEvent.getEventId(), ruleId);
+                JSONObject resObj = new JSONObject();
+                resObj.put("ruleId",ruleId);
+                resObj.put("resType","calc");
+                resObj.put("guid",userEvent.getGuid());
+                resObj.put("timestamp",System.currentTimeMillis());
+                resLst.add(resObj);
             }
         }
+        return resLst;
     }
 
 
@@ -228,13 +239,12 @@ class RuleModel_02_Calculator_Groovy implements RuleCalculator {
 
         if(ruleMatchRealCnt <= ruleMatchMaxCount -1) {
 
-            boolean res_0 = isMatchEventCount()
-            boolean res_1 = isMatchEventSeq()
+            boolean res_0 = isMatchEventCount(guid)
+            boolean res_1 = isMatchEventSeq(guid)
             if( #(ruleCombineExpr) ){
                 jedis.hincrBy(redisMatchCntKey,guid+"",1)
+                return true;
             }
-
-            return true;
         }
 
         return  false;

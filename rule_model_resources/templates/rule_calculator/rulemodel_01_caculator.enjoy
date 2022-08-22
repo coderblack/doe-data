@@ -10,6 +10,8 @@ import org.apache.flink.util.Collector
 import org.roaringbitmap.RoaringBitmap
 import redis.clients.jedis.Jedis
 import groovy.util.logging.Slf4j
+import java.util.List
+import java.util.ArrayList
 
 /**
  * 规则运算机的：规则模型01实现类
@@ -22,9 +24,6 @@ class RuleModel_01_Calculator implements RuleCalculator {
     private JSONObject eventCountConditionParam;
     private String ruleId;
     private RoaringBitmap profileUserBitmap;
-    private Collector<JSONObject> out;
-    JSONObject resultObject;
-
 
     /**
      * 规则运算机的初始化方法
@@ -33,23 +32,18 @@ class RuleModel_01_Calculator implements RuleCalculator {
      * @param ruleDefineParamJsonObject 整个规则的json参数
      */
     @Override
-    void init(Jedis jedis, JSONObject ruleDefineParamJsonObject, RoaringBitmap profileUserBitmap, Collector<JSONObject> out) {
+    void init(JSONObject ruleDefineParamJsonObject, RoaringBitmap profileUserBitmap) {
 
         //log.info("规则运算机对象被初始化......")
-        this.jedis = jedis;
+        this.jedis = new Jedis("doitedu",6379)
         this.ruleDefineParamJsonObject = ruleDefineParamJsonObject;
         this.profileUserBitmap = profileUserBitmap;
-        this.out = out;
 
         // 取到规则的标识id
         ruleId = ruleDefineParamJsonObject.getString("ruleId");
 
         // 取到规则的事件次数条件
         this.eventCountConditionParam = ruleDefineParamJsonObject.getJSONObject("actionCountCondition");
-
-        // 构造一个匹配结果输出对象
-        resultObject = new JSONObject();
-        resultObject.put("ruleId", ruleId)
 
     }
 
@@ -59,8 +53,8 @@ class RuleModel_01_Calculator implements RuleCalculator {
      * @param userEvent 输入的用户行为事件
      */
     @Override
-    public void process(UserEvent userEvent) {
-
+    public List<JSONObject> process(UserEvent userEvent) {
+        List<JSONObject> resLst = new ArrayList<JSONObject>();
         // 判断本事件的行为人，是否属于本规则的画像人群
         if (profileUserBitmap.contains(userEvent.getGuid())) {
 
@@ -70,6 +64,13 @@ class RuleModel_01_Calculator implements RuleCalculator {
             // 判断用户行为事件，如果本事件是规则的触发条件，则进行规则的匹配判断
             if (UserEventComparator.userEventIsEqualParam(userEvent, ruleTrigEventJsonObject)) {
 
+                JSONObject resObj1 = new JSONObject();
+                resObj1.put("ruleId",ruleId);
+                resObj1.put("resType","trigger");
+                resObj1.put("guid",userEvent.getGuid());
+                resObj1.put("timestamp",System.currentTimeMillis());
+                resLst.add(resObj1);
+
                 // 如果是触发事件，则判断本行为人是否已经满足了本规则的所有条件
                 boolean isMatch = isMatch(userEvent.getGuid());
 
@@ -77,9 +78,12 @@ class RuleModel_01_Calculator implements RuleCalculator {
 
                 // 如果已满足，则输出本规则的触达信息
                 if (isMatch) {
-                    resultObject.put("guid", userEvent.getGuid());
-                    resultObject.put("matchTime", System.currentTimeMillis())
-                    out.collect(resultObject);
+                    JSONObject resObj2 = new JSONObject();
+                    resObj2.put("ruleId",ruleId);
+                    resObj2.put("resType","match");
+                    resObj2.put("guid",userEvent.getGuid());
+                    resObj2.put("timestamp",System.currentTimeMillis());
+                    resLst.add(resObj2);
                 }
             }
             // 判断用户行为事件，如果本事件不是规则的触发事件，则进行规则的条件统计运算
@@ -87,8 +91,16 @@ class RuleModel_01_Calculator implements RuleCalculator {
                 // 做规则条件的统计运算
                 calc(userEvent);
                 log.info("收到用户:{} ,行为事件:{}, 规则条件运算：{}", userEvent.getGuid(), userEvent.getEventId(), ruleId);
+                JSONObject resObj = new JSONObject();
+                resObj.put("ruleId",ruleId);
+                resObj.put("resType","calc");
+                resObj.put("guid",userEvent.getGuid());
+                resObj.put("timestamp",System.currentTimeMillis());
+                resLst.add(resObj);
             }
         }
+
+        return resLst;
     }
 
 

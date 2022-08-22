@@ -1,6 +1,6 @@
 {
   "ruleModelId": "2",
-  "ruleId": "2-rule001",
+  "ruleId": "m2-r01",
   "ruleTrigEvent": {
     "eventId": "e5",
     "attributeParams": [

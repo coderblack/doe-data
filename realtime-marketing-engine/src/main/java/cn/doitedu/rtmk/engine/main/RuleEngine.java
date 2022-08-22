@@ -4,13 +4,12 @@ import cn.doitedu.rtmk.common.pojo.UserEvent;
 import cn.doitedu.rtmk.engine.functions.Json2UserEventMapFunction;
 import cn.doitedu.rtmk.engine.functions.Row2RuleMetaBeanMapFunction;
 import cn.doitedu.rtmk.engine.functions.RuleMatchProcessFunction;
-import cn.doitedu.rtmk.engine.functions.RuleMatchProcessFunctionOld;
-import cn.doitedu.rtmk.engine.pojo.RuleMatchResult;
 import cn.doitedu.rtmk.engine.pojo.RuleMetaBean;
 import cn.doitedu.rtmk.engine.utils.FlinkStateDescriptors;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 import org.apache.flink.streaming.api.CheckpointingMode;
@@ -22,6 +21,7 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.types.Row;
+import org.apache.flink.util.OutputTag;
 
 import java.util.Objects;
 
@@ -84,14 +84,16 @@ public class RuleEngine {
 
 
         // 连接用户行为事件流  和  规则变更数据流
-        DataStream<JSONObject> resultStream = userEventStream
+        SingleOutputStreamOperator<JSONObject> resultStream = userEventStream
                 .keyBy(UserEvent::getGuid)
                 .connect(ruleMetaBeanBroadcastStream)
                 // 处理用户事件，进行规则运行和匹配
                 .process(new RuleMatchProcessFunction());
 
         // 打印规则匹配结果
-        resultStream.print();
+        resultStream.print("main");
+        resultStream.getSideOutput(new OutputTag<JSONObject>("ruleStatInfo", TypeInformation.of(JSONObject.class))).print("stat");
+
 
         env.execute();
     }

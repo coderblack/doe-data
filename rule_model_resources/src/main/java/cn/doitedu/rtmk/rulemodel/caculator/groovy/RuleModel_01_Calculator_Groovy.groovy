@@ -33,7 +33,7 @@ class RuleModel_01_Calculator_Groovy implements RuleCalculator {
      * @param ruleDefineParamJsonObject 整个规则的json参数
      */
     @Override
-    void init(Jedis jedis, JSONObject ruleDefineParamJsonObject, RoaringBitmap profileUserBitmap, Collector<JSONObject> out) {
+    void init(JSONObject ruleDefineParamJsonObject, RoaringBitmap profileUserBitmap) {
         this.jedis = jedis;
         this.ruleDefineParamJsonObject = ruleDefineParamJsonObject;
         this.profileUserBitmap = profileUserBitmap;
@@ -57,7 +57,7 @@ class RuleModel_01_Calculator_Groovy implements RuleCalculator {
      * @param userEvent 输入的用户行为事件
      */
     @Override
-    public void process(UserEvent userEvent) {
+    List<JSONObject> process(UserEvent userEvent) {
 
         // 判断本事件的行为人，是否属于本规则的画像人群
         if (profileUserBitmap.contains(userEvent.getGuid())) {

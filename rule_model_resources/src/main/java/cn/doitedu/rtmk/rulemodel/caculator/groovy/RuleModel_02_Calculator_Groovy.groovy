@@ -10,6 +10,8 @@ import org.apache.commons.lang3.time.DateUtils
 import org.apache.flink.util.Collector
 import org.roaringbitmap.RoaringBitmap
 import redis.clients.jedis.Jedis
+import java.util.List
+import java.util.ArrayList
 
 /**
  * 规则运算机的：规则模型01实现类
@@ -57,7 +59,7 @@ class RuleModel_02_Calculator_Groovy implements RuleCalculator {
      * @param ruleDefineParamJsonObject 整个规则的json参数
      */
     @Override
-    void init(Jedis jedis, JSONObject ruleDefineParamJsonObject, RoaringBitmap profileUserBitmap, Collector<JSONObject> out) {
+    void init(JSONObject ruleDefineParamJsonObject, RoaringBitmap profileUserBitmap) {
         this.jedis = jedis;
         this.ruleDefineParamJsonObject = ruleDefineParamJsonObject;
         this.profileUserBitmap = profileUserBitmap;
@@ -80,6 +82,8 @@ class RuleModel_02_Calculator_Groovy implements RuleCalculator {
         resultObject = new JSONObject();
         resultObject.put("ruleId", ruleId)
 
+
+
     }
 
 
@@ -88,7 +92,7 @@ class RuleModel_02_Calculator_Groovy implements RuleCalculator {
      * @param userEvent 输入的用户行为事件
      */
     @Override
-    public void process(UserEvent userEvent) {
+    public List<JSONObject> process(UserEvent userEvent) {
 
         // 判断本事件的行为人，是否属于本规则的画像人群
         if (profileUserBitmap.contains(userEvent.getGuid())) {

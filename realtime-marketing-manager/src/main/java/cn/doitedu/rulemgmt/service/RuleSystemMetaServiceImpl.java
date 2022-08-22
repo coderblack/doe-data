@@ -49,11 +49,13 @@ public class RuleSystemMetaServiceImpl implements RuleSystemMetaService {
             String ruleModelCaculatorGroovyCode
     ) throws IOException, SQLException {
 
-        ByteArrayOutputStream bao = new ByteArrayOutputStream();
-        DataOutputStream dao = new DataOutputStream(bao);
-        profileUserBitmap.serialize(dao);
-
-        byte[] bitmapBytes = bao.toByteArray();
+        byte[] bitmapBytes = null;
+        if(profileUserBitmap !=null ){
+            ByteArrayOutputStream bao = new ByteArrayOutputStream();
+            DataOutputStream dao = new DataOutputStream(bao);
+            profileUserBitmap.serialize(dao);
+            bitmapBytes = bao.toByteArray();
+        }
 
         Timestamp timestamp = new Timestamp(System.currentTimeMillis());
 

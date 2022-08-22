@@ -1,6 +1,7 @@
 package cn.doitedu.rtmk.engine.functions;
 
 import cn.doitedu.rtmk.common.interfaces.RuleCalculator;
+import cn.doitedu.rtmk.common.interfaces.TimerRuleCalculator;
 import cn.doitedu.rtmk.common.pojo.UserEvent;
 import cn.doitedu.rtmk.common.utils.UserEventComparator;
 import cn.doitedu.rtmk.engine.pojo.RuleMatchResult;
@@ -12,10 +13,14 @@ import groovy.lang.GroovyClassLoader;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.state.BroadcastState;
 import org.apache.flink.api.common.state.MapState;
+import org.apache.flink.api.common.state.MapStateDescriptor;
 import org.apache.flink.api.common.state.ReadOnlyBroadcastState;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.streaming.api.TimerService;
 import org.apache.flink.streaming.api.functions.co.KeyedBroadcastProcessFunction;
 import org.apache.flink.util.Collector;
+import org.apache.flink.util.OutputTag;
 import org.roaringbitmap.RoaringBitmap;
 import redis.clients.jedis.Jedis;
 
@@ -31,14 +36,12 @@ import java.util.Map;
  **/
 @Slf4j
 public class RuleMatchProcessFunction extends KeyedBroadcastProcessFunction<Integer, UserEvent, RuleMetaBean, JSONObject> {
-    private Jedis jedis;
 
-    MapState<Long, List<String>> timerState;
+    MapState<String, Long> timerState;
 
     @Override
     public void open(Configuration parameters) throws Exception {
-        jedis = new Jedis("doitedu", 6379);
-        super.open(parameters);
+        timerState = getRuntimeContext().getMapState(new MapStateDescriptor<String, Long>("timerState", String.class, Long.class));
     }
 
     /**
@@ -57,42 +60,59 @@ public class RuleMatchProcessFunction extends KeyedBroadcastProcessFunction<Inte
             RuleMetaBean ruleMetaBean = ruleEntry.getValue();
 
             // 调用规则的运算机，对输入事件进行处理
-            ruleMetaBean.getRuleCalculator().process(userEvent);
+            RuleCalculator ruleCalculator = ruleMetaBean.getRuleCalculator();
+
+            // 如果该规则的运算机是需要用到定时器功能的
+            List<JSONObject> caculatorResponse;
+            if (ruleCalculator instanceof TimerRuleCalculator) {
+                TimerRuleCalculator timerRuleCalculator = (TimerRuleCalculator) ruleCalculator;
+                caculatorResponse = timerRuleCalculator.process(userEvent, timerState, ctx.timerService());
+            } else {
+                caculatorResponse = ruleCalculator.process(userEvent);
+            }
+
+            // 输出运算机的响应数据
+            for (JSONObject resObject : caculatorResponse) {
+                if ("match".equals(resObject.getString("resType"))) {
+                    out.collect(resObject);
+                } else {
+                    ctx.output(new OutputTag<>("ruleStatInfo", TypeInformation.of(JSONObject.class)), resObject);
+                }
+            }
+
 
         }
 
-        // 判断该规则，是否需要定时功能，比如（要求发生A后的15分钟内没有发生B，则要输出触达信息）
-
-        // 如果需要定时功能，则在调用规则运算机处理事件时，传入一个 ctx 和一个记录定时注册的状态 timerState
-        // 规则运算机中，可以利用ctx做定时注册：
-        //   当检测到当前事件是A事件时，注册一个15分钟定时器
-        /*ctx.timerService().registerProcessingTimeTimer(17:25);
-        List<String> rules = timerState.get(17:25)
-        rules.add(ruleId);
-        timerState.put(rules);
-        //   如果是一个B事件，删除之前的定时
-        ctx.timerService().deleteProcessingTimeTimer(17:25);
-        List<String> rules = timerState.get(17:25)
-        rules.remove(ruleId);
-        timerState.put(rules);*/
-
     }
-
 
 
     @Override
     public void onTimer(long timestamp, KeyedBroadcastProcessFunction<Integer, UserEvent, RuleMetaBean, JSONObject>.OnTimerContext ctx, Collector<JSONObject> out) throws Exception {
 
-        /*ReadOnlyBroadcastState<String, RuleMetaBean> broadcastState = ctx.getBroadcastState(FlinkStateDescriptors.ruleMetaBeanMapStateDescriptor);
+        for (Map.Entry<String, Long> entry : timerState.entries()) {
+            // ruleId + ":" + checkEventAttributeValue
+            String key = entry.getKey();
+            String ruleId = key.split(":")[0];
+            Long registerTime = entry.getValue();
+            if (registerTime != null && registerTime == timestamp) {
+                RuleCalculator ruleCalculator = ctx.getBroadcastState(FlinkStateDescriptors.ruleMetaBeanMapStateDescriptor).get(ruleId).getRuleCalculator();
+                if (ruleCalculator instanceof TimerRuleCalculator) {
 
-        List<String> rules = timerState.get(timestamp);
-        for (String ruleId : rules) {
-            RuleMetaBean ruleMetaBean = broadcastState.get(ruleId);
-            // 调用规则bean的处理定时到达的功能
-            ruleMetaBean.getRuleConditionCalculator().timer()
+                    TimerRuleCalculator timerRuleCalculator = (TimerRuleCalculator) ruleCalculator;
 
-        }*/
+                    List<JSONObject> resJsonObjects = timerRuleCalculator.onTimer(timestamp, ctx.getCurrentKey(),timerState, ctx.timerService());
+                    for (JSONObject resObject : resJsonObjects) {
+                        if ("match".equals(resObject.getString("resType"))) {
+                            log.info("-----flink---中----输出了");
+                            out.collect(resObject);
+                        } else {
+                            ctx.output(new OutputTag<>("ruleStatInfo", TypeInformation.of(JSONObject.class)), resObject);
+                        }
+                    }
 
+                }
+            }
+        }
 
     }
 
@@ -110,25 +130,31 @@ public class RuleMatchProcessFunction extends KeyedBroadcastProcessFunction<Inte
             String operateType = ruleMetaBean.getOperateType();
             if ("INSERT".equals(operateType) || "UPDATE".equals(operateType)) {
                 // 把规则的运算机groovy代码，动态编译加载并反射成具体的运算机对象
-                Class aClass = new GroovyClassLoader().parseClass(ruleMetaBean.getCaculatorGroovyCode());
-                RuleCalculator ruleConditionCalculator = (RuleCalculator) aClass.newInstance();
+                GroovyClassLoader groovyClassLoader = new GroovyClassLoader();
+                Class aClass = groovyClassLoader.parseClass(ruleMetaBean.getCaculatorGroovyCode());
+                RuleCalculator ruleCalculator = (RuleCalculator) aClass.newInstance();
 
                 // 对规则运算器做初始化
-                ruleConditionCalculator.init(jedis, JSON.parseObject(ruleMetaBean.getRuleParamJson()),ruleMetaBean.getProfileUserBitmap(),out);
+                ruleCalculator.init(JSON.parseObject(ruleMetaBean.getRuleParamJson()), ruleMetaBean.getProfileUserBitmap());
+
+                /*if (ruleCalculator instanceof TimerRuleCalculator) {
+                    TimerRuleCalculator timerRuleCalculator = (TimerRuleCalculator) ruleCalculator;
+                    timerRuleCalculator.setTimeService(null);
+                }*/
 
                 // 然后将创建好的运算机对象，填充到ruleMetaBean
-                ruleMetaBean.setRuleCalculator(ruleConditionCalculator);
+                ruleMetaBean.setRuleCalculator(ruleCalculator);
 
                 // 再把ruleMetaBean，放入广播状态
                 broadcastState.put(ruleMetaBean.getRuleId(), ruleMetaBean);
-                log.info("接收到一个规则管理信息，操作类型是:{}, 所属的规则模型是:{} ,创建人是:{}", ruleMetaBean.getOperateType(), ruleMetaBean.getRuleModelId(), ruleMetaBean.getCreatorName());
+                log.debug("收到规则管理信息，操作类型:{}, 规则模型:{},规则id:{} ,创建人:{}", ruleMetaBean.getOperateType(), ruleMetaBean.getRuleModelId(), ruleMetaBean.getRuleId(), ruleMetaBean.getCreatorName());
             } else {
                 // 从广播状态中，删除掉该规则的ruleMetaBean
                 broadcastState.remove(ruleMetaBean.getRuleId());
-                log.info("接收到一个规则管理信息，操作类型是:删除, 删除的规则id:{}", ruleMetaBean.getRuleModelId());
+                log.debug("收到规则管理信息，操作类型:删除, 规则id:{}", ruleMetaBean.getRuleModelId());
             }
         } catch (Exception e) {
-            log.info("接收到一个规则管理信息，但规则信息构建失败: {}", e.getMessage());
+            log.debug("收到规则管理信息，规则信息构建失败: {}", e.getMessage());
         }
     }
 }
