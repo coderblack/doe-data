@@ -1,11 +1,14 @@
 package cn.doitedu.etl
 
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 case class Node(val pageId: String, val children: ListBuffer[Node])
 
 object TreeTest {
   def main(args: Array[String]): Unit = {
+
+    val ints = new mutable.PriorityQueue[Int]()
 
     /*
        a -- |
